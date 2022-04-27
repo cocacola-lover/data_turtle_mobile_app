@@ -30,10 +30,10 @@ dependencies:
   flutter:
     sdk: flutter
 
-  dart_application_1:
+  my_app_mongo_api:
     git:
-      url: https://github.com/cocacola-lover/DataAppRep.git
-      ref: master #branch name
+      url: https://github.com/cocacola-lover/MyAppMongoAPI.git
+      ref: main #branch name
 
 
   # The following adds the Cupertino Icons font to your application.

@@ -22,7 +22,9 @@ class _LogInState extends State<LogIn> {
     userController.addListener(() => setState(() {}));
   }
 
-  void _update(Function f) => setState(() => f);
+  void _update(Function f) {
+    if (mounted) setState(() => f);
+  }
 
   @override
   Widget build(BuildContext context) {

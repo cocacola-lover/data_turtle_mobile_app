@@ -1,1 +1,1 @@
-enum ButtonState {init, loading, done}
+enum ButtonState {init, loading, done, failed}

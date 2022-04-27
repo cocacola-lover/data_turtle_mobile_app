@@ -5,12 +5,12 @@ const _labelExample = 'password';
 
 Widget buildPassword({required TextEditingController passwordController,
   required Function(Function) update, required Wrapper<bool> isPasswordVisible,
-  String labelText = _labelExample, IconData passwordIcon = Icons.security, Wrapper<String>? errorMessage})
+  String labelText = _labelExample, IconData passwordIcon = Icons.security, String? errorMessage})
   => TextField(
     controller: passwordController,
     decoration: InputDecoration(
       labelText: labelText,
-      errorText: errorMessage?.value,
+      errorText: errorMessage,
       prefixIcon: Icon(passwordIcon),
       border: const OutlineInputBorder(),
       suffixIcon: IconButton(
@@ -20,7 +20,6 @@ Widget buildPassword({required TextEditingController passwordController,
         onPressed: () {
           isPasswordVisible.value = !isPasswordVisible.value;
           update(() => isPasswordVisible.value = !isPasswordVisible.value);
-          print(isPasswordVisible.value);
         },
       )
   ),
