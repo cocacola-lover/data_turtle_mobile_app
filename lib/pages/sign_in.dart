@@ -2,17 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:my_app/widgets/generic_user_field.dart';
 import 'package:my_app/widgets/generic_password_field.dart';
 import 'package:my_app/widgets/animated_loading_button.dart';
+import 'package:my_app/widgets/generic_snack_bar.dart';
 
 import 'package:my_app/checks/field_checker.dart';
 import 'package:my_app/checks/password_checker.dart';
 
 import 'package:my_app/other/wrapper.dart';
-import 'package:my_app/other/button_enum.dart';
+import 'package:my_app/enums/button_enum.dart';
 
 import 'package:my_app_mongo_api/my_app_api.dart' show UserHubApp, AppException;
 
-//const url = "mongodb+srv://Admin:2xxRHKviEsp6AKq@cluster0.gdgrc.mongodb.net/app_files?retryWrites=true&w=majority";
-const url = "mongodb+srv://Admin:2xxRHKviEsp6AKq@cluster1.gdgrc.mongodb.net/app_files?retryWrites=true&w=majority";
+const url = "mongodb+srv://Admin:2xxRHKviEsp6AKq@cluster0.gdgrc.mongodb.net/app_files?retryWrites=true&w=majority";
+//const url = "mongodb+srv://Admin:2yxRHKviEsp6AKq@cluster1.gdgrc.mongodb.net/app_files?retryWrites=true&w=majority"; //Fake URL
 const _passwordsAreNotSame = "Пароли должны совпадать";
 const _unthinkableMessage = "Something went really wrong here";
 const _toManyUsers = "К сожалению, лимит пользователей был достигнут";
@@ -42,11 +43,14 @@ class _SignInState extends State<SignIn> {
   Future<String?>? dataBaseErr;
 
   Future<String?> openDatabase() async {
-    userHub = await UserHubApp.create(URL: url);
+    //userHub = await UserHubApp.create(URL: url);
     try {
+      userHub = await UserHubApp.create(URL: url);
       await userHub.open();
     } on AppException catch (e) {
       return e.exceptionMessage;
+    } catch (e){
+      rethrow;
     }
     return null;
   }
@@ -67,31 +71,42 @@ class _SignInState extends State<SignIn> {
   }
 
   Future<bool> confirmButton() async{
-      userError = checkField(userController.text);
-      passwordError = null;//passwordChecker.check(passwordController.text);
-      passwordConfirmError = (passwordController.text != passwordConfirmController.text) ? _passwordsAreNotSame : null;
-      if (userError != null || passwordError != null || passwordConfirmError != null) return false;
-      await Future.delayed(const Duration(seconds: 2));
+        // Checking connection
+        String? connectionProblem;
+        if (dataBaseErr == null) throw AppException(_unthinkableMessage);
+        connectionProblem = await dataBaseErr;
 
-      if (dataBaseErr == null) throw AppException(_unthinkableMessage);
-      passwordConfirmError = await dataBaseErr;
-      passwordConfirmError ??= await createUser();
+        if (connectionProblem != null) {
+          showActionSnackBar(context, connectionProblem, 3);
+          return false;
+        }
+        // Checking fields
+        userError = checkField(userController.text);
+        passwordError = passwordChecker.check(passwordController.text);
+        passwordConfirmError = (passwordController.text != passwordConfirmController.text) ? _passwordsAreNotSame : null;
+        if (userError != null || passwordError != null || passwordConfirmError != null) return false;
+        await Future.delayed(const Duration(seconds: 2));
 
-      if (passwordConfirmError == null) return true;
-      return false;
+        // Adding new user
+        connectionProblem ??= await createUser();
+
+        if (connectionProblem != null) {
+          showActionSnackBar(context, connectionProblem, 3);
+          return false;
+        }
+
+        return connectionProblem == null;
   }
 
-  void niceGoBack() {
-    Navigator.pushReplacementNamed(context, '/log_in');
+  void niceGoBack(bool result) {
+     if (result == true) Navigator.pushReplacementNamed(context, '/log_in');
   }
 
 
   @override
   void initState() {
     super.initState();
-    try {
-      dataBaseErr = openDatabase();
-    } on Mon catch (e):
+    dataBaseErr = openDatabase();
 
 
     userController.addListener(() => setState(() {}));
@@ -168,7 +183,7 @@ class _SignInState extends State<SignIn> {
               },
               child: const Text("Уже есть аккаунт?")
           ),
-          width: 150,
+          width: 200,
           height: 40
       ),
       alignment: Alignment.center

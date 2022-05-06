@@ -32,7 +32,7 @@ dependencies:
 
   my_app_mongo_api:
     git:
-      url: https://github.com/cocacola-lover/MyAppMongoAPI.git
+      url: https://github.com/cocacola-lover/myAppMongoAPI.git
       ref: main #branch name
 
 

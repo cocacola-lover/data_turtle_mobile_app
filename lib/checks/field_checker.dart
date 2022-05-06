@@ -1,7 +1,7 @@
 import 'package:my_app/checks/valid_char.dart';
 
 const _prohibitedSymbolMistake = 'Поле содержит запрещенные символы';
-const _lengthMistake = 'Поле должен состоять из более чем 3 символов и меньше 16';
+const _lengthMistake = 'Требуется не менее 3 символов и не более 16';
 
 String? checkField(String password){
   if (!isAscii(password)) return _prohibitedSymbolMistake;

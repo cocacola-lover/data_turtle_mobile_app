@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
 import 'package:my_app/other/wrapper.dart';
-import 'package:my_app/other/button_enum.dart';
+import 'package:my_app/enums/button_enum.dart';
 
 Widget buildAnimatedButton({ required Wrapper<ButtonState> state, required Function(Function) update,
-  required Future<bool> Function() whileLoading, Function()? afterLoading, int wait = 0,
+  required Future<bool> Function() whileLoading, Function(bool result)? afterLoading, int wait = 0,
   MaterialColor color = Colors.indigo, double? width, double? height}) =>
     Container(
       width: width,
@@ -18,7 +18,7 @@ Widget buildAnimatedButton({ required Wrapper<ButtonState> state, required Funct
   );
 
 Widget _buildButton({required Function(Function) update, required Wrapper<ButtonState> state,
-  required Future<bool> Function() whileLoading, Function()? afterLoading, int wait = 0,
+  required Future<bool> Function() whileLoading, Function(bool result)? afterLoading, int wait = 0,
   MaterialColor color = Colors.indigo, double? width, double? height}) =>
     SizedBox(
       child: ElevatedButton(
@@ -28,7 +28,7 @@ Widget _buildButton({required Function(Function) update, required Wrapper<Button
           state.value = (await whileLoading()) ? ButtonState.done : ButtonState.failed;
           update(() {});
           await Future.delayed(Duration(seconds: wait));
-          if (afterLoading != null) afterLoading();
+          if (afterLoading != null) afterLoading(state.value == ButtonState.done);
           state.value = ButtonState.init;
           update(() {});
         },
