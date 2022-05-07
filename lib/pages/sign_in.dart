@@ -143,7 +143,7 @@ class _SignInState extends State<SignIn> {
                     child: buildAnimatedButton(
                         color: Colors.red, width: 150, height: 40, state: state,
                         update: _update, whileLoading: confirmButton, wait: 3,
-                        afterLoading: niceGoBack
+                        afterLoading: niceGoBack, child: const Text("Регистрация")
 
                     ),
                     alignment: Alignment.center,

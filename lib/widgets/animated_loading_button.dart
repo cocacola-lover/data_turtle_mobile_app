@@ -4,7 +4,7 @@ import 'package:my_app/other/wrapper.dart';
 import 'package:my_app/enums/button_enum.dart';
 
 Widget buildAnimatedButton({ required Wrapper<ButtonState> state, required Function(Function) update,
-  required Future<bool> Function() whileLoading, Function(bool result)? afterLoading, int wait = 0,
+  required Future<bool> Function() whileLoading, required Widget child, Function(bool result)? afterLoading, int wait = 0,
   MaterialColor color = Colors.indigo, double? width, double? height}) =>
     Container(
       width: width,
@@ -12,13 +12,13 @@ Widget buildAnimatedButton({ required Wrapper<ButtonState> state, required Funct
       child: (state.value == ButtonState.init) ?
       _buildButton(
         update:update, state: state, color: color, width: width, height: height,
-        whileLoading: whileLoading, afterLoading: afterLoading, wait:wait
+        whileLoading: whileLoading, afterLoading: afterLoading, wait:wait, child: child
       ):
       _buildSmallButton(color:color, width: width, height: height, state: state),
   );
 
 Widget _buildButton({required Function(Function) update, required Wrapper<ButtonState> state,
-  required Future<bool> Function() whileLoading, Function(bool result)? afterLoading, int wait = 0,
+  required Future<bool> Function() whileLoading, required Widget child, Function(bool result)? afterLoading, int wait = 0,
   MaterialColor color = Colors.indigo, double? width, double? height}) =>
     SizedBox(
       child: ElevatedButton(
@@ -27,12 +27,12 @@ Widget _buildButton({required Function(Function) update, required Wrapper<Button
           update(() {});
           state.value = (await whileLoading()) ? ButtonState.done : ButtonState.failed;
           update(() {});
-          await Future.delayed(Duration(seconds: wait));
+          if (state.value == ButtonState.done) await Future.delayed(Duration(seconds: wait));
           if (afterLoading != null) afterLoading(state.value == ButtonState.done);
           state.value = ButtonState.init;
           update(() {});
         },
-        child: const Text("Регистрация")
+        child: child
       ),
       width: width,
       height: height
