@@ -3,21 +3,18 @@ import 'package:my_app/widgets/generic_user_field.dart';
 import 'package:my_app/widgets/generic_password_field.dart';
 import 'package:my_app/widgets/animated_loading_button.dart';
 import 'package:my_app/widgets/generic_snack_bar.dart';
+import 'package:my_app/widgets/generic_leave.dart';
 
 import 'package:my_app/checks/field_checker.dart';
 import 'package:my_app/checks/password_checker.dart';
 
 import 'package:my_app/other/wrapper.dart';
-import 'package:my_app/enums/button_enum.dart';
+import 'package:my_app/other/enums.dart' show ButtonState;
+import 'package:my_app/other/strings.dart' show ConnectionString, OtherMistakes, SignInMistakes;
 
 import 'package:my_app_mongo_api/my_app_api.dart' show UserHubApp, AppException;
 
-const url = "mongodb+srv://Admin:2xxRHKviEsp6AKq@cluster0.gdgrc.mongodb.net/app_files?retryWrites=true&w=majority";
-//const url = "mongodb+srv://Admin:2yxRHKviEsp6AKq@cluster1.gdgrc.mongodb.net/app_files?retryWrites=true&w=majority"; //Fake URL
-const _passwordsAreNotSame = "Пароли должны совпадать";
-const _unthinkableMessage = "Something went really wrong here";
-const _toManyUsers = "К сожалению, лимит пользователей был достигнут";
-const _somethingWentWrong = "Что-то пошло не так";
+const url = ConnectionString.url;
 
 class SignIn extends StatefulWidget {
   const SignIn({Key? key}) : super(key: key);
@@ -43,7 +40,6 @@ class _SignInState extends State<SignIn> {
   Future<String?>? dataBaseErr;
 
   Future<String?> openDatabase() async {
-    //userHub = await UserHubApp.create(URL: url);
     try {
       userHub = await UserHubApp.create(URL: url);
       await userHub.open();
@@ -62,10 +58,10 @@ class _SignInState extends State<SignIn> {
   }
 
   Future<String?> createUser() async {
-    if (await userHub.users.count() > 10) return _toManyUsers;
+    if (await userHub.users.count() > 10) return SignInMistakes.tooManyUsers;
 
     if (await userHub.users.addUser(userController.text,
-        passwordController.text) == false) return _somethingWentWrong;
+        passwordController.text) == false) return OtherMistakes.somethingWentWrong;
 
     return null;
   }
@@ -73,7 +69,7 @@ class _SignInState extends State<SignIn> {
   Future<bool> confirmButton() async{
         // Checking connection
         String? connectionProblem;
-        if (dataBaseErr == null) throw AppException(_unthinkableMessage);
+        if (dataBaseErr == null) throw AppException(OtherMistakes.unthinkableMessage);
         connectionProblem = await dataBaseErr;
 
         if (connectionProblem != null) {
@@ -83,7 +79,7 @@ class _SignInState extends State<SignIn> {
         // Checking fields
         userError = checkField(userController.text);
         passwordError = passwordChecker.check(passwordController.text);
-        passwordConfirmError = (passwordController.text != passwordConfirmController.text) ? _passwordsAreNotSame : null;
+        passwordConfirmError = (passwordController.text != passwordConfirmController.text) ? SignInMistakes.passwordsAreNotSame : null;
         if (userError != null || passwordError != null || passwordConfirmError != null) return false;
         await Future.delayed(const Duration(seconds: 2));
 
@@ -150,7 +146,14 @@ class _SignInState extends State<SignIn> {
                     padding: const EdgeInsets.all(10),
                 ),
                 //const SizedBox(height: 10),
-                buildHaveAccountButton()
+                Align(
+                  child: buildLeaveButton(
+                      context: context, address: "/log_in",
+                      child: const Text("Уже есть аккаунт?")
+                  ),
+                  alignment: Alignment.center,
+                )
+                //buildHaveAccountButton()
               ],
             )
         )
@@ -164,28 +167,4 @@ class _SignInState extends State<SignIn> {
           fontFamily: "Times New Roman"
       )));
 
-
-  Widget buildConfirmButton() => Align(
-      child: SizedBox(
-          child: ElevatedButton(onPressed: () {}, child: const Text("Регистрация")),
-          width: 150,
-          height: 40
-      ),
-      alignment: Alignment.center
-  );
-
-  Widget buildHaveAccountButton() => Align(
-      child: SizedBox(
-          child: TextButton(
-              onPressed: () {
-                Navigator.pushReplacementNamed(context, '/log_in');
-                //Navigator.pushNamed(context, '/log_in');
-              },
-              child: const Text("Уже есть аккаунт?")
-          ),
-          width: 200,
-          height: 40
-      ),
-      alignment: Alignment.center
-  );
 }

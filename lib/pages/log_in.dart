@@ -3,16 +3,14 @@ import 'package:my_app/widgets/generic_user_field.dart';
 import 'package:my_app/widgets/generic_password_field.dart';
 import 'package:my_app/widgets/animated_loading_button.dart';
 import 'package:my_app/widgets/generic_snack_bar.dart';
+import 'package:my_app/widgets/generic_leave.dart';
 
 import 'package:my_app/other/wrapper.dart';
-import 'package:my_app/enums/button_enum.dart';
+import 'package:my_app/other/enums.dart' show ButtonState;
+import 'package:my_app/other/strings.dart' show ConnectionString, OtherMistakes, LogInMistakes;
 
 import 'package:my_app_mongo_api/my_app_api.dart' show UserHubApp, AppException;
 
-const url = "mongodb+srv://Admin:2xxRHKviEsp6AKq@cluster0.gdgrc.mongodb.net/app_files?retryWrites=true&w=majority";
-const _unthinkableMessage = "Should not happen";
-const _userDoesNotExist = "User doesn't exist";
-const _wrongPassword = "Wrong password";
 
 class LogIn extends StatefulWidget {
   const LogIn({Key? key}) : super(key: key);
@@ -37,7 +35,7 @@ class _LogInState extends State<LogIn> {
 
   Future<String?> openDatabase() async {
     try {
-      userHub = await UserHubApp.create(URL: url);
+      userHub = await UserHubApp.create(URL: ConnectionString.url);
       await userHub.open();
     } on AppException catch (e) {
       return e.exceptionMessage;
@@ -49,15 +47,15 @@ class _LogInState extends State<LogIn> {
 
   Future<String?> checkUser() async {
     String? password = await userHub.users.findPasswordByName(userController.text);
-    if (password == null) return _userDoesNotExist;
+    if (password == null) return LogInMistakes.userDoesNotExist;
 
-    if (password != passwordController.text) return _wrongPassword;
+    if (password != passwordController.text) return LogInMistakes.wrongPassword;
     return null;
   }
 
   Future<bool> confirmButton() async {
     String? connectionProblem;
-    if (dataBaseErr == null) throw AppException(_unthinkableMessage);
+    if (dataBaseErr == null) throw AppException(OtherMistakes.unthinkableMessage);
     connectionProblem = await dataBaseErr;
 
     if (connectionProblem != null) {
@@ -69,12 +67,12 @@ class _LogInState extends State<LogIn> {
     connectionProblem ??= await checkUser();
 
     if (connectionProblem != null) {
-      if (connectionProblem == _userDoesNotExist) {
-        userError = _userDoesNotExist;
+      if (connectionProblem == LogInMistakes.userDoesNotExist) {
+        userError = LogInMistakes.userDoesNotExist;
         passwordError = null;
       }
       else {
-        passwordError = _wrongPassword;
+        passwordError = LogInMistakes.wrongPassword;
         userError = null;
       }
       return false;
@@ -127,7 +125,13 @@ class _LogInState extends State<LogIn> {
                     whileLoading: confirmButton, afterLoading: done,
                     wait: 2, child: const Text("Войти")),
                 const SizedBox(height: 10),
-                buildSignInButton()
+              Align(
+                child: buildLeaveButton(
+                    context: context, address: "/sign_in",
+                    child: const Text("Создать аккаунт")
+                ),
+                alignment: Alignment.center,
+              )
         ],
       )
     )
@@ -163,27 +167,4 @@ class _LogInState extends State<LogIn> {
     alignment: Alignment.centerRight,
   );
 
-  Widget buildConfirmButton() => Align(
-      child: SizedBox(
-          child: ElevatedButton(onPressed: () {}, child: const Text("Войти")),
-          width: 150,
-          height: 40
-      ),
-      alignment: Alignment.center
-  );
-
-  Widget buildSignInButton() => Align(
-      child: SizedBox(
-          child: TextButton(
-              onPressed: () {
-                  Navigator.pushReplacementNamed(context, '/sign_in');
-                  //Navigator.pushNamed(context, '/sign_in');
-              },
-              child: const Text("Создать Аккаунт")
-          ),
-          width: 150,
-          height: 40
-      ),
-      alignment: Alignment.center
-  );
 }

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:my_app/other/wrapper.dart';
-import 'package:my_app/enums/button_enum.dart';
+import 'package:my_app/other/enums.dart' show ButtonState;
 
 Widget buildAnimatedButton({ required Wrapper<ButtonState> state, required Function(Function) update,
   required Future<bool> Function() whileLoading, required Widget child, Function(bool result)? afterLoading, int wait = 0,
