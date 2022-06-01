@@ -18,7 +18,7 @@ class SearchField extends StatelessWidget {
   @override
   Widget build(BuildContext context){
     List<Widget> children = [
-      //onFocusChanged == null ?
+      onFocusChanged == null ?
       Flexible(
         child: TextField(
           readOnly: !keyboardIsShown,
@@ -28,7 +28,7 @@ class SearchField extends StatelessWidget {
             contentPadding: EdgeInsets.all(6)
           ),
         ),
-      ), /*: Flexible(
+      ) : Flexible(
           child: Focus(
             onFocusChange: onFocusChanged,
             child: TextField(
@@ -40,7 +40,7 @@ class SearchField extends StatelessWidget {
               ),
             ),
         ),
-      ),*/
+      ),
       searchButton
     ];
     if (secondButton != null) children.insert(1, secondButton as IconButton);

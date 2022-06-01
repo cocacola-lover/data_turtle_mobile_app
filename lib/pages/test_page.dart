@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-//import 'package:my_app/data_classes/tag_data.dart';
-//import 'package:my_app/widgets/tag_bar.dart';
-//import 'package:my_app/widgets/custom_tag_keyboard.dart';
+import 'package:my_app/data_classes/tag_data.dart';
+import 'package:my_app/widgets/tag_bar.dart';
+import 'package:my_app/widgets/custom_tag_keyboard.dart';
 import 'package:my_app/widgets/generic_search_field.dart';
 
 class TestPage extends StatefulWidget {
@@ -15,11 +15,13 @@ class _TestPageState extends State<TestPage> {
   bool searchInFocus = false;
 
   bool tagKeyboardIsShown = false;
-  //final tagData = <TagData>[];
+  final tagData = <TagData>[];
   final fieldController = TextEditingController();
 
-  void onFocusChanged(bool focus) => searchInFocus = focus;
-/*
+
+
+  void onFocusChanged(bool focus) => setState(() {searchInFocus = focus;});
+
   final allTags = {
     "food" : [TagData(label: "apple", group: 1, isSelected: false),
               TagData(label: "meat", group: 1, isSelected: false),
@@ -34,8 +36,8 @@ class _TestPageState extends State<TestPage> {
                 TagData(label: "Beer", group: 3, isSelected: false),
                 TagData(label: "Fanta", group: 3, isSelected: false),
                 TagData(label: "Sprite", group: 3, isSelected: false),]
-  };*/
-/*
+  };
+
   void onTagPressed(TagData tag){
     if (tag.isSelected == false){
       tag.isSelected = true;
@@ -46,25 +48,25 @@ class _TestPageState extends State<TestPage> {
       tagData.remove(tag);
     }
     setState(() {});
-  }*/
+  }
 
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      //resizeToAvoidBottomInset: !searchInFocus,
+      resizeToAvoidBottomInset: !searchInFocus,
       body: Column(
         children: [
+          TextField(),
           const Spacer(),
-          /*SizedBox(
+          SizedBox(
             height: 30,
             child: TagBar(data: tagData, onDeleted: (TagData tag) {
               tag.isSelected = false;
               tagData.remove(tag);
               setState(() {});
             }),
-          ),*/
-          //buildSearchField(),
+          ),
           SearchField(
               onFocusChanged: onFocusChanged,
               keyboardIsShown: !tagKeyboardIsShown,
@@ -78,10 +80,10 @@ class _TestPageState extends State<TestPage> {
               ),
               searchButton: IconButton(icon: const Icon(Icons.search), onPressed: () {}),
           ),
-          /*
+
           (searchInFocus) ? SizedBox(
             height: 300, child: TagKeyboard(onTagPressed: onTagPressed, data: allTags)
-          ) : const SizedBox()*/
+          ) : const SizedBox()
         ],
       ),
     );
