@@ -3,6 +3,7 @@ import 'package:my_app/data_classes/tag_data.dart';
 import 'package:my_app/widgets/tag_bar.dart';
 import 'package:my_app/widgets/custom_tag_keyboard.dart';
 import 'package:my_app/widgets/generic_search_field.dart';
+import 'package:my_app/widgets/suggestion_line.dart';
 
 class TestPage extends StatefulWidget {
   const TestPage({Key? key}) : super(key: key);
@@ -18,9 +19,19 @@ class _TestPageState extends State<TestPage> {
   final tagData = <TagData>[];
   final fieldController = TextEditingController();
 
+  @override
+  void initState(){
+    super.initState();
+
+    fieldController.addListener(() => setState(() {}));
+  }
 
 
-  void onFocusChanged(bool focus) => setState(() {searchInFocus = focus;});
+
+  void onFocusChanged(bool focus) {
+    if (!focus) tagKeyboardIsShown = false;
+    setState(() {searchInFocus = focus;});
+  }
 
   final allTags = {
     "food" : [TagData(label: "apple", group: 1, isSelected: false),
@@ -57,7 +68,7 @@ class _TestPageState extends State<TestPage> {
       resizeToAvoidBottomInset: !searchInFocus,
       body: Column(
         children: [
-          TextField(),
+          const TextField(),
           const Spacer(),
           SizedBox(
             height: 30,
@@ -80,10 +91,14 @@ class _TestPageState extends State<TestPage> {
               ),
               searchButton: IconButton(icon: const Icon(Icons.search), onPressed: () {}),
           ),
-
+          (!tagKeyboardIsShown && searchInFocus && fieldController.text.isNotEmpty) ?
+          SuggestionLine(
+                str: fieldController.text,
+                data: allTags, onTagPressed: onTagPressed
+          ) : const SizedBox(),
           (searchInFocus) ? SizedBox(
             height: 300, child: TagKeyboard(onTagPressed: onTagPressed, data: allTags)
-          ) : const SizedBox()
+          ) : const SizedBox(),
         ],
       ),
     );
