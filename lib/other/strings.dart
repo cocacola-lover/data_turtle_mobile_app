@@ -22,3 +22,9 @@ class ConnectionString{
   static const url = "mongodb+srv://Admin:2xxRHKviEsp6AKq@cluster0.gdgrc.mongodb.net/app_files?retryWrites=true&w=majority";
   static const fakeUrl = "mongodb+srv://Admin:2yxRHKviEsp6AKq@cluster1.gdgrc.mongodb.net/app_files?retryWrites=true&w=majority";
 }
+
+class TagMapFields{
+  static const id = "_id";
+  static const tagName = "tag";
+  static const groupName = "groupName";
+}
