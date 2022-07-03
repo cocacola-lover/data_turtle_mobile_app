@@ -28,3 +28,7 @@ class TagMapFields{
   static const tagName = "tag";
   static const groupName = "groupName";
 }
+
+class ParserMistake{
+  static const tagParserException = "TagParser failed";
+}

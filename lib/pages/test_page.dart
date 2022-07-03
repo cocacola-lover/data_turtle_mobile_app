@@ -4,6 +4,12 @@ import 'package:my_app/widgets/tag_bar.dart';
 import 'package:my_app/widgets/custom_tag_keyboard.dart';
 import 'package:my_app/widgets/generic_search_field.dart';
 import 'package:my_app/widgets/suggestion_line.dart';
+import 'package:my_app/other/strings.dart' show ConnectionString;
+import 'package:my_app/parsers/tag_parser.dart';
+
+import 'package:flutter_keyboard_visibility/flutter_keyboard_visibility.dart';
+import 'dart:async';
+import 'package:my_app_mongo_api/my_app_api.dart' show MongoHubApp;
 
 class TestPage extends StatefulWidget {
   const TestPage({Key? key}) : super(key: key);
@@ -13,41 +19,46 @@ class TestPage extends StatefulWidget {
 }
 
 class _TestPageState extends State<TestPage> {
-  bool searchInFocus = false;
+  late StreamSubscription<bool> keyboardSubscription;
 
+  bool searchInFocus = false;
   bool tagKeyboardIsShown = false;
+
   final tagData = <TagData>[];
   final fieldController = TextEditingController();
 
+  late final MongoHubApp mongoHub;
+  Map<String, List<TagData>> allTags = {};
+
   @override
-  void initState(){
+  void initState() {
     super.initState();
+    var keyboardVisibilityController = KeyboardVisibilityController();
+    keyboardSubscription = keyboardVisibilityController.onChange.listen((bool visible) {
+      if (keyboardVisibilityController.isVisible == false && tagKeyboardIsShown == false && searchInFocus == true){
+        searchInFocus = false;
+        FocusNode().unfocus();
+        setState((){});
+      }
+    });
 
     fieldController.addListener(() => setState(() {}));
+
+    loadAllData();
   }
+  //connection
+  void loadAllData() async{
+    mongoHub = await MongoHubApp.create(URL: ConnectionString.url, hexId: "6241dd1232adfc92ac741177");
+    await mongoHub.open();
 
-
+    allTags = parseAllTags(await mongoHub.tags.findAll());
+    setState((){});
+  }
 
   void onFocusChanged(bool focus) {
     if (!focus) tagKeyboardIsShown = false;
     setState(() {searchInFocus = focus;});
   }
-
-  final allTags = {
-    "food" : [TagData(label: "apple", group: 1, isSelected: false),
-              TagData(label: "meat", group: 1, isSelected: false),
-              TagData(label: "cucumber", group: 1, isSelected: false)],
-    "cars" : [TagData(label: "Nissan", group: 2, isSelected: false),
-              TagData(label: "Nissan", group: 2, isSelected: false)],
-    "drinks" : [TagData(label: "Cola", group: 3, isSelected: false),
-                TagData(label: "Pepsi", group: 3, isSelected: false),
-                TagData(label: "Apple juice", group: 3, isSelected: false),
-                TagData(label: "Orange juice", group: 3, isSelected: false),
-                TagData(label: "Tomato juice", group: 3, isSelected: false),
-                TagData(label: "Beer", group: 3, isSelected: false),
-                TagData(label: "Fanta", group: 3, isSelected: false),
-                TagData(label: "Sprite", group: 3, isSelected: false),]
-  };
 
   void onTagPressed(TagData tag){
     if (tag.isSelected == false){
@@ -64,42 +75,59 @@ class _TestPageState extends State<TestPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      resizeToAvoidBottomInset: !searchInFocus,
-      body: Column(
-        children: [
-          const TextField(),
-          const Spacer(),
-          SizedBox(
-            height: 30,
-            child: TagBar(data: tagData, onDeleted: (TagData tag) {
-              tag.isSelected = false;
-              tagData.remove(tag);
-              setState(() {});
-            }),
-          ),
-          SearchField(
-              onFocusChanged: onFocusChanged,
-              keyboardIsShown: !tagKeyboardIsShown,
-              fieldController: fieldController,
-              secondButton: IconButton(
-                  icon: const Icon(Icons.keyboard),
-                  onPressed: () {
-                    tagKeyboardIsShown = !tagKeyboardIsShown;
-                    setState(() {});
-                  }
-              ),
-              searchButton: IconButton(icon: const Icon(Icons.search), onPressed: () {}),
-          ),
-          (!tagKeyboardIsShown && searchInFocus && fieldController.text.isNotEmpty) ?
-          SuggestionLine(
-                str: fieldController.text,
-                data: allTags, onTagPressed: onTagPressed
-          ) : const SizedBox(),
-          (searchInFocus) ? SizedBox(
-            height: 300, child: TagKeyboard(onTagPressed: onTagPressed, data: allTags)
-          ) : const SizedBox(),
-        ],
+    return WillPopScope(
+      onWillPop: () async {
+        if (tagKeyboardIsShown == true){
+          tagKeyboardIsShown = false;
+          setState((){});
+          return false;
+        }
+        if (searchInFocus == true){
+          searchInFocus = false;
+          setState((){});
+          return false;
+        }
+        setState((){});
+        return true;
+      },
+      child: Scaffold(
+        resizeToAvoidBottomInset: !searchInFocus,
+        body: Column(
+          children: [
+            const TextField(),
+            const Spacer(),
+            SizedBox(
+              height: 30,
+              child: TagBar(data: tagData, onDeleted: (TagData tag) {
+                tag.isSelected = false;
+                tagData.remove(tag);
+                setState(() {});
+              }),
+            ),
+            SearchField(
+                onFocusChanged: onFocusChanged,
+                keyboardIsShown: !tagKeyboardIsShown,
+                fieldController: fieldController,
+                secondButton: IconButton(
+                    icon: const Icon(Icons.keyboard),
+                    onPressed: () {
+                      tagKeyboardIsShown = !tagKeyboardIsShown;
+                      searchInFocus = true;
+                      setState(() {});
+                    }
+                ),
+                searchButton: IconButton(icon: const Icon(Icons.search), onPressed: () {}),
+            ),
+            (!tagKeyboardIsShown && searchInFocus && fieldController.text.isNotEmpty) ?
+            SuggestionLine(
+                  str: fieldController.text,
+                  data: allTags, onTagPressed: onTagPressed
+            ) : const SizedBox(),
+            (searchInFocus) ? SizedBox(
+              height: 300, child: TagKeyboard(onTagPressed: onTagPressed, data: allTags)
+            ) : const SizedBox(),
+          ],
+        ),
       ),
     );
   }

@@ -22,7 +22,7 @@ class SearchField extends StatelessWidget {
       Flexible(
         child: TextField(
           readOnly: !keyboardIsShown,
-          //showCursor: keyboardIsShown,
+          showCursor: keyboardIsShown,
           controller: fieldController,
           decoration: const InputDecoration(
             contentPadding: EdgeInsets.all(6)
