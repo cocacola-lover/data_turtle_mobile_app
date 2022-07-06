@@ -32,3 +32,23 @@ class TagMapFields{
 class ParserMistake{
   static const tagParserException = "TagParser failed";
 }
+
+class FoodProductMapFields{
+  // rateFields:
+  static const rateUserField = "user";
+  static const rateRateField = "rate";
+  static const rateCommentField = "comment";
+  // FoodProductsFields:
+  static const foodProductNameField = "name";
+  static const foodProductRateField = "rate";
+  static const foodProductTagsField = "tags";
+  static const foodProductIdField = "_id";
+}
+
+class ItemPanelStrings{
+  static const yourRating = "Ваша оценка: ";
+  static const averageRating = "Ср. оценка: ";
+
+  static const yourComment = "Ваш комментарий: ";
+  static const randomComment = "Случ. комментарий: ";
+}

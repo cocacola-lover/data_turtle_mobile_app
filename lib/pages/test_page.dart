@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:my_app/data_classes/tag_data.dart';
+import 'package:my_app/data_classes/item_data.dart';
 import 'package:my_app/widgets/tag_bar.dart';
 import 'package:my_app/widgets/custom_tag_keyboard.dart';
 import 'package:my_app/widgets/generic_search_field.dart';
 import 'package:my_app/widgets/suggestion_line.dart';
+import 'package:my_app/widgets/item_panel.dart';
 import 'package:my_app/other/strings.dart' show ConnectionString;
 import 'package:my_app/parsers/tag_parser.dart';
+import 'package:my_app/parsers/item_parser.dart';
 
 import 'package:flutter_keyboard_visibility/flutter_keyboard_visibility.dart';
 import 'dart:async';
@@ -29,6 +32,7 @@ class _TestPageState extends State<TestPage> {
 
   late final MongoHubApp mongoHub;
   Map<String, List<TagData>> allTags = {};
+  List<ItemData> results = [];
 
   @override
   void initState() {
@@ -51,7 +55,8 @@ class _TestPageState extends State<TestPage> {
     mongoHub = await MongoHubApp.create(URL: ConnectionString.url, hexId: "6241dd1232adfc92ac741177");
     await mongoHub.open();
 
-    allTags = parseAllTags(await mongoHub.tags.findAll());
+    allTags = parseAllTags(await mongoHub.tags.findAll(), await mongoHub.tags.sortGroups());
+    results = parseItems(await mongoHub.foordProducts.findAll(), await mongoHub.tags.sortGroups());
     setState((){});
   }
 
@@ -94,8 +99,12 @@ class _TestPageState extends State<TestPage> {
         resizeToAvoidBottomInset: !searchInFocus,
         body: Column(
           children: [
-            const TextField(),
-            const Spacer(),
+            Expanded(
+              child: ListView(
+                shrinkWrap: true,
+                children: results.map((result) => ItemPanel(data: result, userName: "Полина")).toList(),
+              ),
+            ),
             SizedBox(
               height: 30,
               child: TagBar(data: tagData, onDeleted: (TagData tag) {

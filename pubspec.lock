@@ -84,7 +84,14 @@ packages:
       name: cupertino_icons
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.0.4"
+    version: "1.0.5"
+  fading_edge_scrollview:
+    dependency: transitive
+    description:
+      name: fading_edge_scrollview
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "3.0.0"
   fake_async:
     dependency: transitive
     description:
@@ -184,6 +191,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "1.0.2"
+  marquee:
+    dependency: "direct main"
+    description:
+      name: marquee
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "2.2.3"
   matcher:
     dependency: transitive
     description:
@@ -224,7 +238,7 @@ packages:
     description:
       path: "."
       ref: main
-      resolved-ref: "9541709d0736291d02947332465b06b95489f4f5"
+      resolved-ref: "3c441f3c21e537d412d3a154c2dae652068bebf2"
       url: "https://github.com/cocacola-lover/myAppMongoAPI.git"
     source: git
     version: "1.0.0"
@@ -262,7 +276,7 @@ packages:
       name: pool
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.5.0"
+    version: "1.5.1"
   rational:
     dependency: transitive
     description:
@@ -367,5 +381,5 @@ packages:
     source: hosted
     version: "0.4.3"
 sdks:
-  dart: ">=2.17.0-0 <3.0.0"
-  flutter: ">=1.20.0"
+  dart: ">=2.17.0 <3.0.0"
+  flutter: ">=3.0.0"

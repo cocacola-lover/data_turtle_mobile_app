@@ -36,7 +36,7 @@ class SuggestionLine extends StatelessWidget {
     return (children.isNotEmpty) ?
      Container(
        height: height,
-      color: Colors.grey,
+      color: Colors.black12,
       child: ListView(
         padding: EdgeInsets.all(6),
         children: children,

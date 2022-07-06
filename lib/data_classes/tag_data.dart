@@ -7,4 +7,5 @@ class TagData{
   bool isSelected;
 
   TagData({required this.label, required this.group, required this.isSelected, this.id});
+  TagData.empty(): id = ObjectId(), label = "", group = 0, isSelected = false;
 }

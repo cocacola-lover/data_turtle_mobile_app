@@ -1,8 +1,7 @@
-import 'package:mongo_dart/mongo_dart.dart' show ObjectId;
 import 'package:my_app/data_classes/tag_data.dart' show TagData;
 import 'package:my_app/other/strings.dart' show TagMapFields;
 
-Map<String, List<TagData>> parseAllTags(List<Map<String, dynamic>> data){
+Map<String, List<TagData>> parseAllTags(List<Map<String, dynamic>> data, List<String> colors){
   Map<String, List<TagData>> ans = {};
 
   for (var tag in data){
@@ -15,10 +14,8 @@ Map<String, List<TagData>> parseAllTags(List<Map<String, dynamic>> data){
                 label: tag[TagMapFields.tagName], group: 0)
             );
   }
-  int i = 1;
-  for (var list in ans.values){
-    for (var value in list) value.group = i;
-    i++;
+  for (var list in ans.entries){
+    for (var value in list.value) {value.group = colors.indexOf(list.key);}
   }
 
   return ans;
