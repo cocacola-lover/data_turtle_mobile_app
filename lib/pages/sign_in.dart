@@ -10,9 +10,11 @@ import 'package:my_app/checks/password_checker.dart';
 
 import 'package:my_app/other/wrapper.dart';
 import 'package:my_app/other/enums.dart' show ButtonState;
-import 'package:my_app/other/strings.dart' show ConnectionString, OtherMistakes, SignInMistakes;
+import 'package:my_app/other/strings.dart' show ConnectionString, OtherMistakes,
+SignInMistakes, ConnectionProblems;
 
 import 'package:my_app_mongo_api/my_app_api.dart' show UserHubApp, AppException;
+import 'package:mongo_dart/mongo_dart.dart' show ConnectionException;
 
 const url = ConnectionString.url;
 
@@ -36,21 +38,8 @@ class _SignInState extends State<SignIn> {
   final passwordChecker = PasswordChecker();
   Wrapper<bool> isPasswordVisible = Wrapper<bool>(false);
 
-  late final UserHubApp userHub;
-  Future<String?>? dataBaseErr;
-
-  Future<String?> openDatabase() async {
-    try {
-      userHub = await UserHubApp.create(URL: url);
-      await userHub.open();
-    } on AppException catch (e) {
-      return e.exceptionMessage;
-    } catch (e){
-      rethrow;
-    }
-    return null;
-  }
-
+  UserHubApp? userHub;
+  bool disabled = false;
 
   @override
   void setState(VoidCallback fn){
@@ -58,9 +47,9 @@ class _SignInState extends State<SignIn> {
   }
 
   Future<String?> createUser() async {
-    if (await userHub.users.count() > 10) return SignInMistakes.tooManyUsers;
+    if (await userHub!.users.count() > 10) return SignInMistakes.tooManyUsers;
 
-    if (await userHub.users.addUser(userController.text,
+    if (await userHub!.users.addUser(userController.text,
         passwordController.text) == false) return OtherMistakes.somethingWentWrong;
 
     return null;
@@ -69,13 +58,6 @@ class _SignInState extends State<SignIn> {
   Future<bool> confirmButton() async{
         // Checking connection
         String? connectionProblem;
-        if (dataBaseErr == null) throw AppException(OtherMistakes.unthinkableMessage);
-        connectionProblem = await dataBaseErr;
-
-        if (connectionProblem != null) {
-          showActionSnackBar(context, connectionProblem, 3);
-          return false;
-        }
         // Checking fields
         userError = checkField(userController.text);
         passwordError = passwordChecker.check(passwordController.text);
@@ -84,13 +66,20 @@ class _SignInState extends State<SignIn> {
         await Future.delayed(const Duration(seconds: 2));
 
         // Adding new user
-        connectionProblem ??= await createUser();
+        try {
+          await openDatabase();
+          connectionProblem = await createUser();
+          await closeDatabase();
 
-        if (connectionProblem != null) {
-          showActionSnackBar(context, connectionProblem, 3);
+        } on AppException {
+          establishConnection();
+          return false;
+        } on ConnectionException {
+          establishConnection();
           return false;
         }
 
+        if (connectionProblem != null) {showActionSnackBar(context, connectionProblem, 3);}
         return connectionProblem == null;
   }
 
@@ -102,11 +91,70 @@ class _SignInState extends State<SignIn> {
   @override
   void initState() {
     super.initState();
-    dataBaseErr = openDatabase();
-
+    establishConnection();
 
     userController.addListener(() => setState(() {}));
   }
+
+  Future openDatabase() async { // Open database and created if has not been created
+    if (userHub == null){
+      try{
+        userHub = await UserHubApp.create(URL: ConnectionString.url);
+        await userHub!.open();
+      } on AppException{
+        userHub = null;
+        rethrow;
+      } on Exception {
+        userHub = null;
+        print("Unaccounted Exception");
+        rethrow;
+      }
+    }
+    else {
+      try{
+        await userHub!.open();
+      } on AppException {
+        rethrow;
+      } on Exception {
+        print("Unaccounted Exception");
+        rethrow;
+      }
+    }
+  }
+  Future closeDatabase() async {
+    try {
+      userHub!.close();
+    } on Exception {
+      print("UnaccountedException close");
+      rethrow;
+    }
+  }
+  Future establishConnection() async {
+    try {
+      await openDatabase();
+      await closeDatabase();
+      return;
+    } on AppException {
+      if (disabled == false) {showActionSnackBar(context, ConnectionProblems.connectionLost, 3);}
+      disabled = true;
+      setState((){});
+    }
+
+    while (disabled && mounted) {
+      await Future.delayed(const Duration(seconds: 3));
+      try {
+        await openDatabase();
+        await closeDatabase();
+        disabled = false;
+      } on AppException {
+        disabled = true;
+        print("hey1");
+      }
+    }
+    setState((){});
+    if (mounted) showActionSnackBar(context, ConnectionProblems.connectionFound, 2);
+  }
+
 
   void _update(Function f) => setState(() => f);
 
@@ -139,8 +187,8 @@ class _SignInState extends State<SignIn> {
                     child: buildAnimatedButton(
                         color: Colors.red, width: 150, height: 40, state: state,
                         update: _update, whileLoading: confirmButton, wait: 3,
-                        afterLoading: niceGoBack, child: const Text("Регистрация")
-
+                        afterLoading: niceGoBack, child: const Text("Регистрация"),
+                        disabled: disabled
                     ),
                     alignment: Alignment.center,
                     padding: const EdgeInsets.all(10),
@@ -159,7 +207,6 @@ class _SignInState extends State<SignIn> {
         )
     );
   }
-
 
   Widget buildText() => const Center(
       child: Text("Sign in", style: TextStyle(

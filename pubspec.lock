@@ -176,7 +176,7 @@ packages:
       name: json_annotation
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "4.5.0"
+    version: "4.6.0"
   lints:
     dependency: transitive
     description:
@@ -238,7 +238,7 @@ packages:
     description:
       path: "."
       ref: main
-      resolved-ref: "3c441f3c21e537d412d3a154c2dae652068bebf2"
+      resolved-ref: "9d71976d59644d79cea8bb8c31009c4753145fa9"
       url: "https://github.com/cocacola-lover/myAppMongoAPI.git"
     source: git
     version: "1.0.0"

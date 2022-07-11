@@ -52,3 +52,8 @@ class ItemPanelStrings{
   static const yourComment = "Ваш комментарий: ";
   static const randomComment = "Случ. комментарий: ";
 }
+
+class ConnectionProblems {
+  static const connectionLost = "Похоже вы отключены от сети. Подключитесь и попробуйте ещё раз";
+  static const connectionFound = "Соединение было восстановлено";
+}

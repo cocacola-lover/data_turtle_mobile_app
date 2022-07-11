@@ -18,6 +18,7 @@ List<ItemData> parseItems(List<Map<String, dynamic>> data, List<String> colors){
         tags: (item[FoodProductMapFields.foodProductTagsField] as List<dynamic>)
         .map((value) => TagData(
             label: (value as Map<String, dynamic>)[TagMapFields.tagName] as String,
+            id: value[FoodProductMapFields.foodProductIdField] as ObjectId,
             group: colors.indexOf(value[TagMapFields.groupName]),
             isSelected: false
         )).toList(),

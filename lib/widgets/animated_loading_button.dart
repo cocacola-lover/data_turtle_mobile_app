@@ -5,24 +5,25 @@ import 'package:my_app/other/enums.dart' show ButtonState;
 
 Widget buildAnimatedButton({ required Wrapper<ButtonState> state, required Function(Function) update,
   required Future<bool> Function() whileLoading, required Widget child, Function(bool result)? afterLoading, int wait = 0,
-  MaterialColor color = Colors.indigo, double? width, double? height}) =>
+  MaterialColor color = Colors.indigo, double? width, double? height, bool disabled = false}) =>
     Container(
       width: width,
       height: height,
       child: (state.value == ButtonState.init) ?
       _buildButton(
         update:update, state: state, color: color, width: width, height: height,
-        whileLoading: whileLoading, afterLoading: afterLoading, wait:wait, child: child
+        whileLoading: whileLoading, afterLoading: afterLoading, wait:wait, child: child,
+        disabled: disabled
       ):
       _buildSmallButton(color:color, width: width, height: height, state: state),
   );
 
 Widget _buildButton({required Function(Function) update, required Wrapper<ButtonState> state,
   required Future<bool> Function() whileLoading, required Widget child, Function(bool result)? afterLoading, int wait = 0,
-  MaterialColor color = Colors.indigo, double? width, double? height}) =>
+  MaterialColor color = Colors.indigo, double? width, double? height, bool disabled = false}) =>
     SizedBox(
       child: ElevatedButton(
-        onPressed: () async {
+        onPressed: disabled == false ? () async {
           state.value = ButtonState.loading;
           update(() {});
           state.value = (await whileLoading()) ? ButtonState.done : ButtonState.failed;
@@ -31,7 +32,7 @@ Widget _buildButton({required Function(Function) update, required Wrapper<Button
           if (afterLoading != null) afterLoading(state.value == ButtonState.done);
           state.value = ButtonState.init;
           update(() {});
-        },
+        } : null,
         child: child
       ),
       width: width,

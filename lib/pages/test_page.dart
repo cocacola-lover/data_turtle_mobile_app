@@ -5,14 +5,16 @@ import 'package:my_app/widgets/tag_bar.dart';
 import 'package:my_app/widgets/custom_tag_keyboard.dart';
 import 'package:my_app/widgets/generic_search_field.dart';
 import 'package:my_app/widgets/suggestion_line.dart';
+import 'package:my_app/widgets/generic_snack_bar.dart';
 import 'package:my_app/widgets/item_panel.dart';
-import 'package:my_app/other/strings.dart' show ConnectionString;
+import 'package:my_app/other/strings.dart' show ConnectionString, ConnectionProblems;
 import 'package:my_app/parsers/tag_parser.dart';
 import 'package:my_app/parsers/item_parser.dart';
 
 import 'package:flutter_keyboard_visibility/flutter_keyboard_visibility.dart';
 import 'dart:async';
-import 'package:my_app_mongo_api/my_app_api.dart' show MongoHubApp;
+import 'package:my_app_mongo_api/my_app_api.dart' show MongoHubApp, AppException;
+import 'package:mongo_dart/mongo_dart.dart' show ConnectionException;
 
 class TestPage extends StatefulWidget {
   const TestPage({Key? key}) : super(key: key);
@@ -30,7 +32,8 @@ class _TestPageState extends State<TestPage> {
   final tagData = <TagData>[];
   final fieldController = TextEditingController();
 
-  late final MongoHubApp mongoHub;
+  MongoHubApp? mongoHub;
+  bool disabled = false;
   Map<String, List<TagData>> allTags = {};
   List<ItemData> results = [];
 
@@ -46,18 +49,121 @@ class _TestPageState extends State<TestPage> {
       }
     });
 
-    fieldController.addListener(() => setState(() {}));
+    fieldController.addListener(() {
+      loadFilteredData();
+      setState((){});
+    });
+
+    establishConnection();
+  }
+  @override
+  void setState(VoidCallback fn){
+    if (mounted) super.setState(fn);
+  }
+
+  //connection
+  Future openDatabase() async { // Open database and created if has not been created
+    if (mongoHub == null){
+      try{
+        mongoHub = await MongoHubApp.create(URL: ConnectionString.url, hexId: "6241dd1232adfc92ac741177");
+        await mongoHub!.open();
+      } on AppException{
+        mongoHub = null;
+        rethrow;
+      } on Exception {
+        mongoHub = null;
+        print("Unaccounted Exception");
+        rethrow;
+      }
+    }
+    else {
+      try{
+        await mongoHub!.open();
+      } on AppException {
+        rethrow;
+      } on Exception {
+        print("Unaccounted Exception");
+        rethrow;
+      }
+    }
+  }
+  Future closeDatabase() async {
+    try {
+      mongoHub!.close();
+    } on Exception {
+      print("UnaccountedException close");
+      rethrow;
+    }
+  }
+  Future establishConnection() async {
+    bool first = true;
+    try {
+      await openDatabase();
+      await closeDatabase();
+      disabled = false;
+      loadAllData();
+      return;
+    } on AppException {
+      if (first) {showActionSnackBar(context, ConnectionProblems.connectionLost, 3);}
+      first = false; disabled = true;
+      setState((){});
+    }
+
+    while (disabled && mounted) {
+      await Future.delayed(const Duration(seconds: 3));
+      try {
+        await openDatabase();
+        await closeDatabase();
+        disabled = false;
+      } on AppException {
+        disabled = true;
+        print("hey");
+      }
+    }
+    setState((){});
+    if (mounted) showActionSnackBar(context, ConnectionProblems.connectionFound, 2);
 
     loadAllData();
   }
-  //connection
   void loadAllData() async{
-    mongoHub = await MongoHubApp.create(URL: ConnectionString.url, hexId: "6241dd1232adfc92ac741177");
-    await mongoHub.open();
+    try {
+      await openDatabase();
+      allTags = parseAllTags(await mongoHub!.tags.findAll(), await mongoHub!.tags.sortGroups());
+      await closeDatabase();
+      setState((){});
+    } on AppException {
+      allTags = {};
+      establishConnection();
+      return;
+    } on ConnectionException {
+      allTags = {};
+      establishConnection();
+      return;
+    }
+  }
 
-    allTags = parseAllTags(await mongoHub.tags.findAll(), await mongoHub.tags.sortGroups());
-    results = parseItems(await mongoHub.foordProducts.findAll(), await mongoHub.tags.sortGroups());
-    setState((){});
+  void loadFilteredData() async {
+    if (fieldController.text.isEmpty && allTags.isEmpty) {results = []; setState(() {}); return;}
+    try {
+      await openDatabase();
+      results = parseItems(
+          await mongoHub!.foordProducts.findFiltered(
+              stringFilter: fieldController.text,
+              tags: TagData.getAllId(tagData)
+          ),
+          await mongoHub!.tags.sortGroups()
+      ); // getting results
+      await closeDatabase();
+      setState((){});
+    } on AppException {
+      results = [];
+      establishConnection();
+      return;
+    } on ConnectionException {
+      results = [];
+      establishConnection();
+      return;
+    }
   }
 
   void onFocusChanged(bool focus) {
@@ -74,7 +180,7 @@ class _TestPageState extends State<TestPage> {
       tag.isSelected = false;
       tagData.remove(tag);
     }
-    setState(() {});
+    loadFilteredData();
   }
 
 
@@ -117,13 +223,14 @@ class _TestPageState extends State<TestPage> {
                 onFocusChanged: onFocusChanged,
                 keyboardIsShown: !tagKeyboardIsShown,
                 fieldController: fieldController,
+                disabled: disabled,
                 secondButton: IconButton(
                     icon: const Icon(Icons.keyboard),
-                    onPressed: () {
+                    onPressed: disabled == false ? () {
                       tagKeyboardIsShown = !tagKeyboardIsShown;
                       searchInFocus = true;
                       setState(() {});
-                    }
+                    } : null
                 ),
                 searchButton: IconButton(icon: const Icon(Icons.search), onPressed: () {}),
             ),

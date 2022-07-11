@@ -8,12 +8,13 @@ class SearchField extends StatelessWidget {
   final IconButton searchButton;
 
   final ValueChanged<bool>? onFocusChanged;
+  final bool disabled;
 
 
   const SearchField(
       {Key? key, required this.fieldController, this.keyboardIsShown = true,
       required this.searchButton, this.secondButton, this.preButton,
-        this.onFocusChanged}) : super(key: key);
+        this.onFocusChanged, this.disabled = false}) : super(key: key);
 
   @override
   Widget build(BuildContext context){
@@ -21,8 +22,8 @@ class SearchField extends StatelessWidget {
       onFocusChanged == null ?
       Flexible(
         child: TextField(
-          readOnly: !keyboardIsShown,
-          showCursor: keyboardIsShown,
+          readOnly: !keyboardIsShown || disabled,
+          showCursor: keyboardIsShown && !disabled,
           controller: fieldController,
           decoration: const InputDecoration(
             contentPadding: EdgeInsets.all(6)
@@ -32,8 +33,8 @@ class SearchField extends StatelessWidget {
           child: Focus(
             onFocusChange: onFocusChanged,
             child: TextField(
-              readOnly: !keyboardIsShown,
-              showCursor: keyboardIsShown,
+              readOnly: !keyboardIsShown || disabled,
+              showCursor: keyboardIsShown && !disabled,
               controller: fieldController,
               decoration: const InputDecoration(
                   contentPadding: EdgeInsets.all(6)
