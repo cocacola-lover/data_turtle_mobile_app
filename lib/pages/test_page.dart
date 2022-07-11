@@ -6,6 +6,7 @@ import 'package:my_app/widgets/custom_tag_keyboard.dart';
 import 'package:my_app/widgets/generic_search_field.dart';
 import 'package:my_app/widgets/suggestion_line.dart';
 import 'package:my_app/widgets/generic_snack_bar.dart';
+import 'package:my_app/widgets/loading_screen.dart';
 import 'package:my_app/widgets/item_panel.dart';
 import 'package:my_app/other/strings.dart' show ConnectionString, ConnectionProblems;
 import 'package:my_app/parsers/tag_parser.dart';
@@ -14,7 +15,7 @@ import 'package:my_app/parsers/item_parser.dart';
 import 'package:flutter_keyboard_visibility/flutter_keyboard_visibility.dart';
 import 'dart:async';
 import 'package:my_app_mongo_api/my_app_api.dart' show MongoHubApp, AppException;
-import 'package:mongo_dart/mongo_dart.dart' show ConnectionException;
+import 'package:mongo_dart/mongo_dart.dart' show ConnectionException, ObjectId;
 
 class TestPage extends StatefulWidget {
   const TestPage({Key? key}) : super(key: key);
@@ -24,18 +25,20 @@ class TestPage extends StatefulWidget {
 }
 
 class _TestPageState extends State<TestPage> {
+  // keyboard controllers
   late StreamSubscription<bool> keyboardSubscription;
-
   bool searchInFocus = false;
   bool tagKeyboardIsShown = false;
-
   final tagData = <TagData>[];
   final fieldController = TextEditingController();
-
+  //connection
   MongoHubApp? mongoHub;
   bool disabled = false;
   Map<String, List<TagData>> allTags = {};
   List<ItemData> results = [];
+  //Queue
+  MapEntry<String, List<ObjectId>>? inQueue;
+  bool queueIsRunning = false;
 
   @override
   void initState() {
@@ -50,8 +53,9 @@ class _TestPageState extends State<TestPage> {
     });
 
     fieldController.addListener(() {
-      loadFilteredData();
-      setState((){});
+      //loadFilteredData();
+      setState(() { });
+      addToQueue();
     });
 
     establishConnection();
@@ -142,6 +146,45 @@ class _TestPageState extends State<TestPage> {
     }
   }
 
+  // queue
+  Future runQueue() async {
+    queueIsRunning = true;
+    while (inQueue != null){
+      var inQueueCopy = MapEntry(inQueue!.key, List<ObjectId>.from(inQueue!.value));
+      inQueue = null;
+      await newLoadFilteredData(inQueueCopy);
+    }
+    queueIsRunning = false; setState(() {});
+  }
+  void addToQueue() {
+    inQueue = MapEntry(fieldController.text, TagData.getAllId(tagData));
+    if (!queueIsRunning) runQueue();
+  }
+
+  Future newLoadFilteredData(MapEntry<String, List<ObjectId>> pair) async {
+    if (fieldController.text.isEmpty && tagData.isEmpty) {results = []; return;}
+    try {
+      await openDatabase();
+      if (inQueue == null){
+      results = parseItems(
+          await mongoHub!.foordProducts.findFiltered(
+              stringFilter: pair.key,
+              tags: pair.value
+          ),
+          await mongoHub!.tags.sortGroups()
+      );} // getting results
+      await closeDatabase();
+    } on AppException {
+      results = [];
+      establishConnection();
+      return;
+    } on ConnectionException {
+      results = [];
+      establishConnection();
+      return;
+    }
+  }
+
   void loadFilteredData() async {
     if (fieldController.text.isEmpty && allTags.isEmpty) {results = []; setState(() {}); return;}
     try {
@@ -170,7 +213,6 @@ class _TestPageState extends State<TestPage> {
     if (!focus) tagKeyboardIsShown = false;
     setState(() {searchInFocus = focus;});
   }
-
   void onTagPressed(TagData tag){
     if (tag.isSelected == false){
       tag.isSelected = true;
@@ -180,7 +222,8 @@ class _TestPageState extends State<TestPage> {
       tag.isSelected = false;
       tagData.remove(tag);
     }
-    loadFilteredData();
+    setState((){});
+    addToQueue();
   }
 
 
@@ -206,7 +249,7 @@ class _TestPageState extends State<TestPage> {
         body: Column(
           children: [
             Expanded(
-              child: ListView(
+              child: queueIsRunning ? LoadingPage() : ListView(
                 shrinkWrap: true,
                 children: results.map((result) => ItemPanel(data: result, userName: "Полина")).toList(),
               ),
@@ -216,6 +259,7 @@ class _TestPageState extends State<TestPage> {
               child: TagBar(data: tagData, onDeleted: (TagData tag) {
                 tag.isSelected = false;
                 tagData.remove(tag);
+                addToQueue();
                 setState(() {});
               }),
             ),
