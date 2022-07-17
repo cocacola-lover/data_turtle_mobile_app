@@ -1,67 +1,100 @@
 import 'package:flutter/material.dart';
-import 'package:my_app/data_classes/tag_data.dart';
-import 'package:my_app/data_classes/item_data.dart';
-import 'package:my_app/widgets/tag_bar.dart';
+import 'package:flutter_keyboard_visibility/flutter_keyboard_visibility.dart';
+//widgets
 import 'package:my_app/widgets/custom_tag_keyboard.dart';
-import 'package:my_app/widgets/generic_search_field.dart' show SearchField;
+import 'package:my_app/widgets/generic_search_field.dart' show SearchFieldV2;
 import 'package:my_app/widgets/suggestion_line.dart';
 import 'package:my_app/widgets/generic_snack_bar.dart';
+import 'package:my_app/widgets/tag_bar.dart';
 import 'package:my_app/widgets/loading_screen.dart';
 import 'package:my_app/widgets/item_panel.dart';
-import 'package:my_app/other/strings.dart' show ConnectionString, ConnectionProblems;
-import 'package:my_app/parsers/tag_parser.dart';
-import 'package:my_app/parsers/item_parser.dart';
-
-import 'package:flutter_keyboard_visibility/flutter_keyboard_visibility.dart';
-import 'dart:async';
+// dataClasses
+import 'package:my_app/data_classes/tag_data.dart';
+import 'package:my_app/data_classes/item_data.dart';
+//connection
 import 'package:my_app_mongo_api/my_app_api.dart' show MongoHubApp, AppException;
 import 'package:mongo_dart/mongo_dart.dart' show ConnectionException, ObjectId;
+//parsers
+import 'package:my_app/parsers/tag_parser.dart';
+import 'package:my_app/parsers/item_parser.dart';
+//other
+import 'package:my_app/other/strings.dart' show ConnectionString, ConnectionProblems;
+import 'package:my_app/other/enums.dart' show CustomKeyboard;
+import 'dart:async';
 
-class TestPage extends StatefulWidget {
-  const TestPage({Key? key}) : super(key: key);
+
+class SearchPage extends StatefulWidget {
+  const SearchPage({Key? key}) : super(key: key);
 
   @override
-  State<TestPage> createState() => _TestPageState();
+  State<SearchPage> createState() => _SearchPageState();
 }
 
-class _TestPageState extends State<TestPage> {
-  // keyboard controllers
-  FocusNode focusNode = FocusNode();
+class _SearchPageState extends State<SearchPage> {
+  //keyboard
   late StreamSubscription<bool> keyboardSubscription;
-  bool searchInFocus = false;
-  bool tagKeyboardIsShown = false;
-  final tagData = <TagData>[];
+  final focusNode = FocusNode();
   final fieldController = TextEditingController();
+  CustomKeyboard state = CustomKeyboard.nothingIsShown;
+  bool customKeyboardIsActive = false;
   //connection
   MongoHubApp? mongoHub;
-  bool disabled = false;
   Map<String, List<TagData>> allTags = {};
+  final tagData = <TagData>[];
+  bool disabled = false;
   List<ItemData> results = [];
   //Queue
   MapEntry<String, List<ObjectId>>? inQueue;
   bool queueIsRunning = false;
   bool flag = false;
 
-  @override
-  void dispose() {
-    focusNode.dispose();
-    super.dispose();
+  void onTagPressed(TagData tag){
+    if (tag.isSelected == false){
+      tag.isSelected = true;
+      tagData.insert(0, tag);
+    }
+    else{
+      tag.isSelected = false;
+      tagData.remove(tag);
+    }
+    addToQueue();
+    setState((){});
   }
+  void onTagPressedAndDelete(TagData tag){
+    if (tag.isSelected == false){
+      tag.isSelected = true;
+      tagData.insert(0, tag);
+    }
+    else{
+      tag.isSelected = false;
+      tagData.remove(tag);
+    }
+    fieldController.clear();
+    setState((){});
+    addToQueue();
+  }
+
   @override
   void initState() {
     super.initState();
+
     var keyboardVisibilityController = KeyboardVisibilityController();
+    //focusNode.addListener(() { })
+    // Subscribe
     keyboardSubscription = keyboardVisibilityController.onChange.listen((bool visible) {
-      if (keyboardVisibilityController.isVisible == false && tagKeyboardIsShown == false && searchInFocus == true){
-        searchInFocus = false;
-        FocusNode().unfocus();
+      if (state != CustomKeyboard.standardKeyboardIsShown && visible) {
+        state = CustomKeyboard.standardKeyboardIsShown;
+      } else if (state == CustomKeyboard.standardKeyboardIsShown && !visible){
+        FocusScope.of(context).unfocus();
+        state = CustomKeyboard.nothingIsShown;
         setState((){});
       }
+      setState((){});
     });
 
     fieldController.addListener(() {
-      setState(() { });
       addToQueue();
+      setState((){});
     });
 
     establishConnection();
@@ -71,7 +104,7 @@ class _TestPageState extends State<TestPage> {
     if (mounted) super.setState(fn);
   }
 
-  //connection
+  // connection
   Future openDatabase() async { // Open database and created if has not been created
     if (mongoHub == null){
       try{
@@ -99,7 +132,7 @@ class _TestPageState extends State<TestPage> {
   }
   Future closeDatabase() async {
     try {
-      mongoHub!.close();
+      await mongoHub!.close();
     } on Exception {
       print("UnaccountedException close");
       rethrow;
@@ -143,35 +176,31 @@ class _TestPageState extends State<TestPage> {
       await closeDatabase();
       setState((){});
     } on AppException {
-      print("loadAlldata");
       allTags = {};
       establishConnection();
       return;
     } on ConnectionException {
-      print("loadAlldata");
       allTags = {};
       establishConnection();
       return;
     }
-    betterRunQueue();
+    await runQueue();
   }
 
   // queue
-  void addToQueue() {
-    flag = true;
-  }
-  Future betterRunQueue() async {
+  void addToQueue() => flag = true;
+  Future runQueue() async {
     try {
-      await openDatabase();
       while (mounted) {
         while (flag == false && mounted) {
           await Future.delayed(const Duration(seconds: 1));
-          print("disabled=${disabled}");
         }
         flag = false;
         if (fieldController.text.isEmpty && tagData.isEmpty) {results = []; setState((){}); continue;}
+        print("entered runQueue");
         queueIsRunning = true;
         setState((){});
+        await openDatabase();
         results = parseItems(
             await mongoHub!.foordProducts.findFiltered(
                 stringFilter: fieldController.text,
@@ -179,20 +208,12 @@ class _TestPageState extends State<TestPage> {
             ),
             await mongoHub!.tags.sortGroups()
         );
+        await closeDatabase();
         queueIsRunning = false;
         setState((){});
+        print("left runQueue");
       }
-      print("closed");
-      await closeDatabase();
-
     } on AppException {
-      print("betterRunQueue");
-      results = [];
-      mongoHub = null;
-      establishConnection();
-      return;
-    } on ConnectionException {
-      print("betterRunQueue");
       results = [];
       mongoHub = null;
       establishConnection();
@@ -200,58 +221,26 @@ class _TestPageState extends State<TestPage> {
     }
   }
 
-  void onFocusChanged(bool focus) {
-    if (!focus) tagKeyboardIsShown = false;
-    setState(() {searchInFocus = focus;});
+  @override
+  void dispose() {
+    focusNode.dispose(); keyboardSubscription.cancel();
+    super.dispose();
   }
-  void onTagPressed(TagData tag){
-    if (tag.isSelected == false){
-      tag.isSelected = true;
-      tagData.insert(0, tag);
-    }
-    else{
-      tag.isSelected = false;
-      tagData.remove(tag);
-    }
-    setState((){});
-    addToQueue();
-  }
-  void onTagPressedAndDelete(TagData tag){
-    if (tag.isSelected == false){
-      tag.isSelected = true;
-      tagData.insert(0, tag);
-    }
-    else{
-      tag.isSelected = false;
-      tagData.remove(tag);
-    }
-    fieldController.clear();
-    setState((){});
-    addToQueue();
-  }
-
-
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
       onWillPop: () async {
-        if (tagKeyboardIsShown == true){
-          tagKeyboardIsShown = false;
+        if (state == CustomKeyboard.customKeyboardIsShown){
+          state = CustomKeyboard.nothingIsShown;
           setState((){});
           return false;
         }
-        if (searchInFocus == true){
-          searchInFocus = false;
-          setState((){});
-          return false;
-        }
-        setState((){});
         return true;
       },
       child: Scaffold(
-        resizeToAvoidBottomInset: !searchInFocus,
+        resizeToAvoidBottomInset: state == CustomKeyboard.nothingIsShown,
         body: Column(
-          children: [
+          children: <Widget>[
             Expanded(
               child: queueIsRunning ? const LoadingPage() : ListView(
                 shrinkWrap: true,
@@ -267,34 +256,39 @@ class _TestPageState extends State<TestPage> {
                 setState(() {});
               }),
             ),
-            SearchField(
-                onFocusChanged: onFocusChanged,
-                keyboardIsShown: !tagKeyboardIsShown,
-                fieldController: fieldController,
-                disabled: disabled,
-                secondButton: IconButton(
-                    icon: const Icon(Icons.keyboard),
-                    onPressed: disabled == false ? () {
-                      if (searchInFocus == false) {focusNode.requestFocus();}
-                      tagKeyboardIsShown = !tagKeyboardIsShown;
-                      searchInFocus = true;
-                      setState(() {});
-                    } : null
-                ),
-                searchButton: IconButton(icon: const Icon(Icons.search), onPressed: () {}),
+            SearchFieldV2(
+              disabled: disabled,
+              fieldController: fieldController,
+              focusNode: focusNode,
+              searchButton: IconButton(
+                icon : const Icon(Icons.keyboard),
+                onPressed: (){
+                  if (state == CustomKeyboard.customKeyboardIsShown)
+                  {
+                    state = CustomKeyboard.standardKeyboardIsShown;
+                    focusNode.requestFocus();
+                  }
+                  else {
+                    state = CustomKeyboard.customKeyboardIsShown;
+                    //SystemChannels.textInput.invokeMethod('TextInput.hide');
+                    FocusScope.of(context).unfocus();
+                  }
+                  setState((){});
+                },
+              ),
             ),
-            (!tagKeyboardIsShown && searchInFocus && fieldController.text.isNotEmpty) ?
+            (state == CustomKeyboard.standardKeyboardIsShown && fieldController.text.isNotEmpty) ?
             SuggestionLine(
-                  str: fieldController.text,
-                  data: allTags, onTagPressed: onTagPressedAndDelete
+                str: fieldController.text,
+                data: allTags, onTagPressed: onTagPressedAndDelete
             ) : const SizedBox(),
-            (searchInFocus) ? SizedBox(
-              height: 300, child: TagKeyboard(onTagPressed: onTagPressed, data: allTags)
+
+            (state != CustomKeyboard.nothingIsShown) ? SizedBox(
+                height: 300, child: TagKeyboard(onTagPressed: onTagPressed, data: allTags)
             ) : const SizedBox(),
           ],
         ),
       ),
     );
   }
-
 }

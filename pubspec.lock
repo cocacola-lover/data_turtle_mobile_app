@@ -238,7 +238,7 @@ packages:
     description:
       path: "."
       ref: main
-      resolved-ref: "9d71976d59644d79cea8bb8c31009c4753145fa9"
+      resolved-ref: "0eaf7d46fb214af18ae4d09e2f73aac8d7929b58"
       url: "https://github.com/cocacola-lover/myAppMongoAPI.git"
     source: git
     version: "1.0.0"
