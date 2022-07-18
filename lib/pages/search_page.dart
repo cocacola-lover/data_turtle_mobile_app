@@ -18,7 +18,7 @@ import 'package:mongo_dart/mongo_dart.dart' show ConnectionException, ObjectId;
 import 'package:my_app/parsers/tag_parser.dart';
 import 'package:my_app/parsers/item_parser.dart';
 //other
-import 'package:my_app/other/strings.dart' show ConnectionString, ConnectionProblems;
+import 'package:my_app/other/strings.dart' show ConnectionString, ConnectionProblems, AppLines;
 import 'package:my_app/other/enums.dart' show CustomKeyboard;
 import 'package:my_app/other/app_shared_preferences.dart' show AppSharedPreferences;
 import 'dart:async';
@@ -55,6 +55,8 @@ class _SearchPageState extends State<SearchPage> {
     await sharedPreferences.init();
     userName = sharedPreferences.getUserName() ?? "TestUser";
   }
+  void goTo(String address) => Navigator.pushNamed(context, address);
+  void leaveFor(String address) => Navigator.pushReplacementNamed(context, address);
 
   void onTagPressed(TagData tag){
     if (tag.isSelected == false){
@@ -245,58 +247,66 @@ class _SearchPageState extends State<SearchPage> {
         }
         return true;
       },
-      child: Scaffold(
-        resizeToAvoidBottomInset: state == CustomKeyboard.nothingIsShown,
-        body: Column(
-          children: <Widget>[
-            Expanded(
-              child: queueIsRunning ? const LoadingPage() : ListView(
-                shrinkWrap: true,
-                children: results.map((result) => ItemPanel(data: result, userName: userName)).toList(),
+        child: Scaffold(
+          appBar: AppBar(
+            title: const Text(AppLines.name),
+            actions: [
+              IconButton(
+                  onPressed: () => leaveFor("/settings_page"),
+                  icon: const Icon(Icons.settings))
+            ],
+          ),
+          resizeToAvoidBottomInset: state == CustomKeyboard.nothingIsShown,
+          body: Column(
+            children: <Widget>[
+              Expanded(
+                child: queueIsRunning ? const LoadingPage() : ListView(
+                  shrinkWrap: true,
+                  children: results.map((result) => ItemPanel(data: result, userName: userName)).toList(),
+                ),
               ),
-            ),
-            SizedBox(
-              height: 30,
-              child: TagBar(data: tagData, onDeleted: (TagData tag) {
-                tag.isSelected = false;
-                tagData.remove(tag);
-                addToQueue();
-                setState(() {});
-              }),
-            ),
-            SearchFieldV2(
-              disabled: disabled,
-              fieldController: fieldController,
-              focusNode: focusNode,
-              searchButton: IconButton(
-                icon : const Icon(Icons.keyboard),
-                onPressed: (){
-                  if (state == CustomKeyboard.customKeyboardIsShown)
-                  {
-                    state = CustomKeyboard.standardKeyboardIsShown;
-                    focusNode.requestFocus();
-                  }
-                  else {
-                    state = CustomKeyboard.customKeyboardIsShown;
-                    //SystemChannels.textInput.invokeMethod('TextInput.hide');
-                    FocusScope.of(context).unfocus();
-                  }
-                  setState((){});
-                },
+              SizedBox(
+                height: 30,
+                child: TagBar(data: tagData, onDeleted: (TagData tag) {
+                  tag.isSelected = false;
+                  tagData.remove(tag);
+                  addToQueue();
+                  setState(() {});
+                }),
               ),
-            ),
-            (state == CustomKeyboard.standardKeyboardIsShown && fieldController.text.isNotEmpty) ?
-            SuggestionLine(
-                str: fieldController.text,
-                data: allTags, onTagPressed: onTagPressedAndDelete
-            ) : const SizedBox(),
+              SearchFieldV2(
+                disabled: disabled,
+                fieldController: fieldController,
+                focusNode: focusNode,
+                searchButton: IconButton(
+                  icon : const Icon(Icons.keyboard),
+                  onPressed: (){
+                    if (state == CustomKeyboard.customKeyboardIsShown)
+                    {
+                      state = CustomKeyboard.standardKeyboardIsShown;
+                      focusNode.requestFocus();
+                    }
+                    else {
+                      state = CustomKeyboard.customKeyboardIsShown;
+                      //SystemChannels.textInput.invokeMethod('TextInput.hide');
+                      FocusScope.of(context).unfocus();
+                    }
+                    setState((){});
+                  },
+                ),
+              ),
+              (state == CustomKeyboard.standardKeyboardIsShown && fieldController.text.isNotEmpty) ?
+              SuggestionLine(
+                  str: fieldController.text,
+                  data: allTags, onTagPressed: onTagPressedAndDelete
+              ) : const SizedBox(),
 
-            (state != CustomKeyboard.nothingIsShown) ? SizedBox(
-                height: 300, child: TagKeyboard(onTagPressed: onTagPressed, data: allTags)
-            ) : const SizedBox(),
-          ],
+              (state != CustomKeyboard.nothingIsShown) ? SizedBox(
+                  height: 300, child: TagKeyboard(onTagPressed: onTagPressed, data: allTags,)
+              ) : const SizedBox(),
+            ],
+          ),
         ),
-      ),
     );
   }
 }

@@ -5,15 +5,17 @@ const _spacing = 5.0;
 
 
 class TagKeyboard extends StatelessWidget {
-  const TagKeyboard({Key? key, required this.onTagPressed, required this.data})
+  const TagKeyboard({Key? key, required this.onTagPressed, required this.data,
+    this.backgroundColor = Colors.black12})
       : super(key: key);
 
   final ValueSetter<TagData> onTagPressed;
   final Map<String, List<TagData>> data;
+  final Color backgroundColor;
 
   @override
   Widget build(BuildContext context) => Container(
-    color: Colors.black12,
+    color: backgroundColor,
     child: ListView(
       padding: EdgeInsets.zero,
       children: data.entries.map((entry) => Column(

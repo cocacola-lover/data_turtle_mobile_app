@@ -37,10 +37,7 @@ class _LogInState extends State<LogIn> {
   bool disabled = false;
 
   final AppSharedPreferences sharedPreferences = AppSharedPreferences();
-  Future checkSharedPreferences() async {
-    await sharedPreferences.init();
-    if (sharedPreferences.getUserName() != null) enter();
-  }
+  Future initSharedPreferences() async => sharedPreferences.init();
   Future saveSharedPreferences(String userName) async {
     while(!sharedPreferences.isLive && mounted) {await Future.delayed(const Duration(seconds: 1));}
     sharedPreferences.setUserName(userName);
@@ -141,8 +138,6 @@ class _LogInState extends State<LogIn> {
       return false;
     }
 
-    await Future.delayed(const Duration(seconds: 1));
-
     if (connectionProblem == null) {await saveSharedPreferences(userName); return true;}
     return false;
   }
@@ -161,7 +156,7 @@ class _LogInState extends State<LogIn> {
   @override
   void initState() {
     establishConnection();
-    checkSharedPreferences();
+    initSharedPreferences();
 
     super.initState();
     userController.addListener(() => setState(() {}));

@@ -12,6 +12,7 @@ class AppSharedPreferences {
 
   Future setUserObjectId(ObjectId user) async =>
         await _sharedPreferences!.setString(_userId, user.toHexString());
+  Future deleteUserObjectId() async => await  _sharedPreferences!.remove(_userId);
   ObjectId? getUserObjectId() {
     String? hexString = _sharedPreferences!.getString(_userId);
     return hexString != null ? ObjectId.fromHexString(hexString) : null;
@@ -19,5 +20,6 @@ class AppSharedPreferences {
 
   Future setUserName(String userName) async =>
       await _sharedPreferences!.setString(_userName, userName);
+  Future deleteUserName() async => await  _sharedPreferences!.remove(_userName);
   String? getUserName() => _sharedPreferences!.getString(_userName);
 }
