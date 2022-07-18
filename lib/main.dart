@@ -12,7 +12,7 @@ void main() {
         colorSchemeSeed: Colors.red,
         brightness: Brightness.light
     ),
-      initialRoute: '/search_page',
+      initialRoute: '/log_in',
     routes: {
       '/log_in':(context) => LogIn(),
       '/sign_in': (context) => SignIn(),

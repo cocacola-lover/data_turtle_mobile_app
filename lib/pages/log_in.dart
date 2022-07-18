@@ -5,9 +5,10 @@ import 'package:my_app/widgets/animated_loading_button.dart';
 import 'package:my_app/widgets/generic_snack_bar.dart';
 import 'package:my_app/widgets/generic_leave.dart';
 
+import 'package:my_app/other/app_shared_preferences.dart';
 import 'package:my_app/other/wrapper.dart';
 import 'package:my_app/other/enums.dart' show ButtonState;
-import 'package:my_app/other/strings.dart' show ConnectionString, OtherMistakes,
+import 'package:my_app/other/strings.dart' show ConnectionString,
 LogInMistakes, ConnectionProblems;
 
 import 'package:my_app_mongo_api/my_app_api.dart' show UserHubApp, AppException;
@@ -34,6 +35,16 @@ class _LogInState extends State<LogIn> {
 
   Wrapper<bool> isPasswordVisible = Wrapper<bool>(false);
   bool disabled = false;
+
+  final AppSharedPreferences sharedPreferences = AppSharedPreferences();
+  Future checkSharedPreferences() async {
+    await sharedPreferences.init();
+    if (sharedPreferences.getUserName() != null) enter();
+  }
+  Future saveSharedPreferences(String userName) async {
+    while(!sharedPreferences.isLive && mounted) {await Future.delayed(const Duration(seconds: 1));}
+    sharedPreferences.setUserName(userName);
+  }
 
 
   Future openDatabase() async { // Open database and created if has not been created
@@ -95,22 +106,21 @@ class _LogInState extends State<LogIn> {
     if (mounted) showActionSnackBar(context, ConnectionProblems.connectionFound, 2);
   }
 
-  Future<String?> checkUser() async {
-    String? password = await userHub!.users.findPasswordByName(userController.text);
+  Future<String?> checkUser(String userName, String setPassword) async {
+    String? password = await userHub!.users.findPasswordByName(userName);
     if (password == null) return LogInMistakes.userDoesNotExist;
 
-    if (password != passwordController.text) return LogInMistakes.wrongPassword;
+    if (password != setPassword) return LogInMistakes.wrongPassword;
     return null;
   }
-
   Future<bool> confirmButton() async {
     passwordError = userError = null;
+    String userName = userController.text; String password = passwordController.text;
     String? connectionProblem;
     try {
       await openDatabase();
-      connectionProblem = await checkUser();
+      connectionProblem = await checkUser(userName, password);
       await closeDatabase();
-
     } on AppException {
       establishConnection();
       return false;
@@ -133,12 +143,16 @@ class _LogInState extends State<LogIn> {
 
     await Future.delayed(const Duration(seconds: 1));
 
-    return connectionProblem == null;
+    if (connectionProblem == null) {await saveSharedPreferences(userName); return true;}
+    return false;
   }
 
   void done(bool result) {
-    showActionSnackBar(context, result.toString(), 3);
+    if (result == true) enter();
   }
+  void enter()
+    => Navigator.pushReplacementNamed(context, "/search_page");
+
   @override
   void setState(VoidCallback fn){
     if (mounted) super.setState(fn);
@@ -147,6 +161,7 @@ class _LogInState extends State<LogIn> {
   @override
   void initState() {
     establishConnection();
+    checkSharedPreferences();
 
     super.initState();
     userController.addListener(() => setState(() {}));

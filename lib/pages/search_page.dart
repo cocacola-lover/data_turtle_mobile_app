@@ -20,6 +20,7 @@ import 'package:my_app/parsers/item_parser.dart';
 //other
 import 'package:my_app/other/strings.dart' show ConnectionString, ConnectionProblems;
 import 'package:my_app/other/enums.dart' show CustomKeyboard;
+import 'package:my_app/other/app_shared_preferences.dart' show AppSharedPreferences;
 import 'dart:async';
 
 
@@ -47,6 +48,13 @@ class _SearchPageState extends State<SearchPage> {
   MapEntry<String, List<ObjectId>>? inQueue;
   bool queueIsRunning = false;
   bool flag = false;
+  //SharedPreferences
+  String userName = "TestUser";
+  final AppSharedPreferences sharedPreferences = AppSharedPreferences();
+  Future getSharedPreferences() async {
+    await sharedPreferences.init();
+    userName = sharedPreferences.getUserName() ?? "TestUser";
+  }
 
   void onTagPressed(TagData tag){
     if (tag.isSelected == false){
@@ -79,7 +87,6 @@ class _SearchPageState extends State<SearchPage> {
     super.initState();
 
     var keyboardVisibilityController = KeyboardVisibilityController();
-    //focusNode.addListener(() { })
     // Subscribe
     keyboardSubscription = keyboardVisibilityController.onChange.listen((bool visible) {
       if (state != CustomKeyboard.standardKeyboardIsShown && visible) {
@@ -97,6 +104,7 @@ class _SearchPageState extends State<SearchPage> {
       setState((){});
     });
 
+    getSharedPreferences();
     establishConnection();
   }
   @override
@@ -244,7 +252,7 @@ class _SearchPageState extends State<SearchPage> {
             Expanded(
               child: queueIsRunning ? const LoadingPage() : ListView(
                 shrinkWrap: true,
-                children: results.map((result) => ItemPanel(data: result, userName: "Полина")).toList(),
+                children: results.map((result) => ItemPanel(data: result, userName: userName)).toList(),
               ),
             ),
             SizedBox(
