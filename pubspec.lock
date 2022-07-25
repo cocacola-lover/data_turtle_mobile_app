@@ -85,13 +85,6 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "1.0.5"
-  fading_edge_scrollview:
-    dependency: transitive
-    description:
-      name: fading_edge_scrollview
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "3.0.0"
   fake_async:
     dependency: transitive
     description:
@@ -205,13 +198,6 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "1.0.2"
-  marquee:
-    dependency: "direct main"
-    description:
-      name: marquee
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "2.2.3"
   matcher:
     dependency: transitive
     description:
@@ -252,7 +238,7 @@ packages:
     description:
       path: "."
       ref: main
-      resolved-ref: "0eaf7d46fb214af18ae4d09e2f73aac8d7929b58"
+      resolved-ref: d2f769546be03939a66f39717468fb037dc3bbe3
       url: "https://github.com/cocacola-lover/myAppMongoAPI.git"
     source: git
     version: "1.0.0"
@@ -311,7 +297,7 @@ packages:
       name: pointycastle
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "3.6.0"
+    version: "3.6.1"
   pool:
     dependency: transitive
     description:
@@ -339,7 +325,7 @@ packages:
       name: sasl_scram
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.1.0"
+    version: "0.1.1"
   saslprep:
     dependency: transitive
     description:

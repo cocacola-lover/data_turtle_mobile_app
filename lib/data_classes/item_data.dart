@@ -13,9 +13,9 @@ class ItemData{
 
 class Rate{
   String userName;
-  int rate;
+  int? rate;
   String? comment;
 
-  Rate({required this.rate, required this.userName, this.comment});
-  Rate.empty(): rate = 0, userName = "", comment = "";
+  Rate({this.rate, required this.userName, this.comment});
+  Rate.empty(): rate = null, userName = "", comment = null;
 }

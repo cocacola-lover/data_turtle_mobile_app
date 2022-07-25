@@ -200,6 +200,7 @@ class _SearchPageState extends State<SearchPage> {
   // queue
   void addToQueue() => flag = true;
   Future runQueue() async {
+    await openDatabase();
     try {
       while (mounted) {
         while (flag == false && mounted) {
@@ -207,10 +208,7 @@ class _SearchPageState extends State<SearchPage> {
         }
         flag = false;
         if (fieldController.text.isEmpty && tagData.isEmpty) {results = []; setState((){}); continue;}
-        print("entered runQueue");
-        queueIsRunning = true;
-        setState((){});
-        await openDatabase();
+        setState(() => queueIsRunning = true);
         results = parseItems(
             await mongoHub!.foordProducts.findFiltered(
                 stringFilter: fieldController.text,
@@ -218,11 +216,9 @@ class _SearchPageState extends State<SearchPage> {
             ),
             await mongoHub!.tags.sortGroups()
         );
-        await closeDatabase();
-        queueIsRunning = false;
-        setState((){});
-        print("left runQueue");
+        setState(() => queueIsRunning = false);
       }
+      await closeDatabase();
     } on AppException {
       results = [];
       mongoHub = null;
@@ -278,7 +274,7 @@ class _SearchPageState extends State<SearchPage> {
                 disabled: disabled,
                 fieldController: fieldController,
                 focusNode: focusNode,
-                searchButton: IconButton(
+                secondButton: IconButton(
                   icon : const Icon(Icons.keyboard),
                   onPressed: (){
                     if (state == CustomKeyboard.customKeyboardIsShown)
@@ -293,6 +289,10 @@ class _SearchPageState extends State<SearchPage> {
                     }
                     setState((){});
                   },
+                ),
+                searchButton: IconButton(
+                  icon: const Icon(Icons.add),
+                  onPressed: () => Navigator.pushNamed(context, "/action_page"),
                 ),
               ),
               (state == CustomKeyboard.standardKeyboardIsShown && fieldController.text.isNotEmpty) ?

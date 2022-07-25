@@ -90,3 +90,43 @@ class SearchFieldV2 extends StatelessWidget {
   }
 }
 
+class MyTextFormField extends StatelessWidget {
+  const MyTextFormField({Key? key, this.focusNode, this.fieldController,
+    this.preButton, this.searchButton, this.secondButton, this.disabled = false,
+    this.validator, this.maxLength}) : super(key: key);
+
+  final bool disabled;
+  final FocusNode? focusNode;
+  final TextEditingController? fieldController;
+  final String? Function(String?)? validator;
+  final int? maxLength;
+  final IconButton? preButton;
+  final IconButton? secondButton;
+  final IconButton? searchButton;
+
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        preButton != null ? preButton as IconButton : const SizedBox(),
+        Flexible(
+          child: TextFormField(
+            maxLength: maxLength,
+            validator: validator,
+            readOnly: disabled,
+            showCursor: !disabled,
+            focusNode: focusNode,
+            controller: fieldController,
+            decoration: const InputDecoration(
+                contentPadding: EdgeInsets.all(6)
+            ),
+          ),
+        ),
+        secondButton != null ? secondButton as IconButton : const SizedBox(),
+        searchButton != null ? searchButton as IconButton : const SizedBox(),
+      ],
+    );
+  }
+}
+
