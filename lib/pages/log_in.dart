@@ -12,7 +12,7 @@ import 'package:my_app/other/strings.dart' show ConnectionString,
 LogInMistakes, ConnectionProblems;
 
 import 'package:my_app_mongo_api/my_app_api.dart' show UserHubApp, AppException;
-import 'package:mongo_dart/mongo_dart.dart' show ConnectionException;
+import 'package:mongo_dart/mongo_dart.dart' show ConnectionException, ObjectId;
 
 
 class LogIn extends StatefulWidget {
@@ -38,9 +38,10 @@ class _LogInState extends State<LogIn> {
 
   final AppSharedPreferences sharedPreferences = AppSharedPreferences();
   Future initSharedPreferences() async => sharedPreferences.init();
-  Future saveSharedPreferences(String userName) async {
+  Future saveSharedPreferences(String userName, ObjectId userId) async {
     while(!sharedPreferences.isLive && mounted) {await Future.delayed(const Duration(seconds: 1));}
     sharedPreferences.setUserName(userName);
+    sharedPreferences.setUserObjectId(userId);
   }
 
 
@@ -111,12 +112,14 @@ class _LogInState extends State<LogIn> {
     return null;
   }
   Future<bool> confirmButton() async {
+    ObjectId? userId;
     passwordError = userError = null;
     String userName = userController.text; String password = passwordController.text;
     String? connectionProblem;
     try {
       await openDatabase();
       connectionProblem = await checkUser(userName, password);
+      if (connectionProblem == null) {userId = await userHub!.users.findIdByNameModern(userName);}
       await closeDatabase();
     } on AppException {
       establishConnection();
@@ -138,7 +141,7 @@ class _LogInState extends State<LogIn> {
       return false;
     }
 
-    if (connectionProblem == null) {await saveSharedPreferences(userName); return true;}
+    if (connectionProblem == null) {await saveSharedPreferences(userName, userId as ObjectId); return true;}
     return false;
   }
 

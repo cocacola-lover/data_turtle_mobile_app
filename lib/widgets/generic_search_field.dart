@@ -93,8 +93,9 @@ class SearchFieldV2 extends StatelessWidget {
 class MyTextFormField extends StatelessWidget {
   const MyTextFormField({Key? key, this.focusNode, this.fieldController,
     this.preButton, this.searchButton, this.secondButton, this.disabled = false,
-    this.validator, this.maxLength}) : super(key: key);
+    this.validator, this.maxLength, this.hintText}) : super(key: key);
 
+  final String? hintText;
   final bool disabled;
   final FocusNode? focusNode;
   final TextEditingController? fieldController;
@@ -118,8 +119,9 @@ class MyTextFormField extends StatelessWidget {
             showCursor: !disabled,
             focusNode: focusNode,
             controller: fieldController,
-            decoration: const InputDecoration(
-                contentPadding: EdgeInsets.all(6)
+            decoration: InputDecoration(
+                contentPadding: const EdgeInsets.all(6),
+                hintText: hintText
             ),
           ),
         ),

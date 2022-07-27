@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_keyboard_visibility/flutter_keyboard_visibility.dart';
 //widgets
 import 'package:my_app/widgets/custom_tag_keyboard.dart';
 import 'package:my_app/widgets/tag_bar.dart';
@@ -14,15 +13,15 @@ import 'package:mongo_dart/mongo_dart.dart' show ObjectId;
 //parsers
 import 'package:my_app/parsers/tag_parser.dart';
 //other
-import 'package:my_app/other/strings.dart' show ConnectionString, ActionPageLines;
-import 'package:my_app/other/enums.dart' show CustomKeyboard, ButtonState;
+import 'package:my_app/other/strings.dart' show ConnectionString, ActionPageLines, TestUser;
+import 'package:my_app/other/enums.dart' show ButtonState;
 import 'package:my_app/other/wrapper.dart';
+import 'package:my_app/other/app_shared_preferences.dart' show AppSharedPreferences;
 import 'dart:async';
 
 
 class ActionPage extends StatefulWidget {
-  final bool isNew;
-  const ActionPage({Key? key, required this.isNew}) : super(key: key);
+  const ActionPage({Key? key}) : super(key: key);
 
   @override
   State<ActionPage> createState() => _ActionPageState();
@@ -34,16 +33,13 @@ class _ActionPageState extends State<ActionPage> {
   void _update(Function f) => setState(() => f);
   Future<bool> whileLoading() async {
     flag = true;
-    while (flag) {Future.delayed(const Duration(seconds: 1));}
+    while (flag) {await Future.delayed(const Duration(seconds: 1));}
     return done;
   }
   void whenDone(bool done){
     if (done) Navigator.pushReplacementNamed(context, "/search_page");
   }
   //keyboard
-  late StreamSubscription<bool> keyboardSubscription;
-  FocusNode focusNode = FocusNode();
-  CustomKeyboard state = CustomKeyboard.nothingIsShown;
   bool customKeyboardIsActive = false;
 
   //controllers
@@ -58,6 +54,14 @@ class _ActionPageState extends State<ActionPage> {
   //bool
   bool flag = false; bool done = false;
   bool disabled = false; bool turnOffButton = false;
+
+  //sharedPreferences
+  ObjectId userId = ObjectId.fromHexString(TestUser.hexString);
+  final AppSharedPreferences sharedPreferences = AppSharedPreferences();
+  Future getSharedPreferences() async {
+    await sharedPreferences.init();
+    userId = sharedPreferences.getUserObjectId() ?? ObjectId.fromHexString(TestUser.hexString);
+  }
 
 
   void onTagPressed(TagData tag){
@@ -75,7 +79,8 @@ class _ActionPageState extends State<ActionPage> {
   Future openDatabase() async { // Open database and created if has not been created
     if (mongoHub == null){
       try{
-        mongoHub = await MongoHubApp.create(URL: ConnectionString.url, hexId: "6241dd1232adfc92ac741177");
+        while(!sharedPreferences.isLive && mounted) {await Future.delayed(const Duration(milliseconds: 1));}
+        mongoHub = await MongoHubApp.create(URL: ConnectionString.url, hexId: userId.toHexString());
         await mongoHub!.open();
       } on AppException{
         mongoHub = null;
@@ -101,7 +106,7 @@ class _ActionPageState extends State<ActionPage> {
     try {
       mongoHub!.close();
     } on Exception {
-      print("UnaccountedException close");
+      print("Unaccounted Exception");
       rethrow;
     }
   }
@@ -109,11 +114,10 @@ class _ActionPageState extends State<ActionPage> {
     try {
       await openDatabase();
       allTags = parseAllTags(await mongoHub!.tags.findAll(), await mongoHub!.tags.sortGroups());
-      //await closeDatabase();
       setState((){});
-      while (mounted){
-        while (mounted && !flag) {
-          Future.delayed(const Duration(seconds: 1));
+      while (true){
+        while (true && !flag) {
+          await Future.delayed(const Duration(seconds: 1));
         }
         if (await mongoHub!.foordProducts.existsName(nameController.text)){
             showActionSnackBar(context, ActionPageLines.productAlreadyExists, 3);
@@ -125,7 +129,7 @@ class _ActionPageState extends State<ActionPage> {
           for (final tag in tagData) {product.addTag(tag.id);}
           product.addRate(ObjectId.fromHexString("6241dd1232adfc92ac741177"),
               comment: commentController.text != "" ? commentController.text : null,
-              rate: numController.text != "" ? int.parse(commentController.text) : null);
+              rate: numController.text != "" ? int.parse(numController.text) : null);
           done = await mongoHub!.foordProducts.addJson(product.returnJson());
           flag = false;
           if (done) break;
@@ -151,26 +155,8 @@ class _ActionPageState extends State<ActionPage> {
   void initState() {
     super.initState();
 
-    var keyboardVisibilityController = KeyboardVisibilityController();
-    // Subscribe
-    keyboardSubscription = keyboardVisibilityController.onChange.listen((bool visible) {
-      if (state != CustomKeyboard.standardKeyboardIsShown && visible) {
-        state = CustomKeyboard.standardKeyboardIsShown;
-      } else if (state == CustomKeyboard.standardKeyboardIsShown && !visible){
-        FocusScope.of(context).unfocus();
-        state = CustomKeyboard.nothingIsShown;
-        setState((){});
-      }
-      setState((){});
-    });
-
+    getSharedPreferences();
     loadAllData();
-  }
-  @override
-  void dispose() {
-    closeDatabase();
-    focusNode.dispose(); keyboardSubscription.cancel();
-    super.dispose();
   }
   @override
   void setState(VoidCallback fn){
@@ -179,149 +165,79 @@ class _ActionPageState extends State<ActionPage> {
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
-        if (state == CustomKeyboard.customKeyboardIsShown){
-          state = CustomKeyboard.nothingIsShown;
-          setState((){});
-          return false;
-        }
-        return true;
-      },
-      child: Scaffold(
-        appBar: AppBar(
-            title: widget.isNew ?
-            const Text(ActionPageLines.createNewPageName) :
-            const Text(ActionPageLines.editOldPageName),
+    return Scaffold(
+      appBar: AppBar(
+            title: const Text(ActionPageLines.createNewPageName),
           leading: IconButton(
             icon : const Icon(Icons.keyboard_return_outlined),
             onPressed: () => Navigator.pushReplacementNamed(context, "/search_page"),
           ),
         ),
-        resizeToAvoidBottomInset: state == CustomKeyboard.nothingIsShown,
-        body: Column(
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 10.0),
+        child: Column(
           children: <Widget>[
-            Row(
-              children: [
-                Flexible(
-                    child: Container(
-                      child: const Text(ActionPageLines.nameField),
-                      margin: const EdgeInsets.symmetric(horizontal: 10.0)
-                     ),
-                    flex: 1
-                ),
-                Flexible(child: MyTextFormField(
-                  fieldController: nameController,
-                  focusNode: focusNode,
-                  disabled: disabled,
-                  maxLength: 100,
-                  searchButton: IconButton(
-                    icon : const Icon(Icons.keyboard),
-                    onPressed: (){
-                      if (state == CustomKeyboard.customKeyboardIsShown)
-                      {
-                        state = CustomKeyboard.standardKeyboardIsShown;
-                        focusNode.requestFocus();
-                      }
-                      else {
-                        state = CustomKeyboard.customKeyboardIsShown;
-                        FocusScope.of(context).unfocus();
-                      }
-                      setState((){});
+            MyTextFormField(
+                hintText: ActionPageLines.nameField,
+                fieldController: nameController,
+                disabled: disabled || customKeyboardIsActive,
+                maxLength: 100,
+                searchButton: IconButton(
+                  icon : const Icon(Icons.keyboard),
+                  onPressed: (){
+                    if (!customKeyboardIsActive) FocusScope.of(context).unfocus();
+                    customKeyboardIsActive = !customKeyboardIsActive;
+                    setState((){});
                     },
+                ),
+              ), //Name Row
+              const SizedBox(height: 10),
+              SizedBox(
+                height: 30,
+                child: TagBar(data: tagData, onDeleted: (TagData tag) {
+                  tag.isSelected = false;
+                  tagData.remove(tag);
+                  setState(() {});
+                }),), //Tag Row
+              const SizedBox(height: 10),
+              TextFormField(
+                  decoration: const InputDecoration(
+                    hintText: ActionPageLines.rateField
                   ),
-                ), flex: 3)
-              ],
-            ), //Name Row
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Flexible(
-                    child: Container(
-                        child: const Text(ActionPageLines.tagsField),
-                        margin: const EdgeInsets.symmetric(horizontal: 20.0)
-                    ),
-                    flex: 1
+                  controller: numController,
+                  keyboardType: TextInputType.number,
+                  autovalidateMode: AutovalidateMode.onUserInteraction,
+                  readOnly: disabled || customKeyboardIsActive,
+                  maxLength: 3,
+                  validator: (value) {
+                    if (value=="") {turnOffButton = true; return null;}
+                    if (!isNumeric(value) || value == null) {turnOffButton = true; return "Недопустимое значение";}
+                    if (0 > int.parse(value) || int.parse(value) > 10){
+                      turnOffButton = true;
+                      return "Число должно быть между 0 и 10";
+                    }
+                    turnOffButton = false;
+                    return null;
+                    },
                 ),
-                Flexible(child: SizedBox(
-                  height: 30,
-                  child: TagBar(data: tagData, onDeleted: (TagData tag) {
-                    tag.isSelected = false;
-                    tagData.remove(tag);
-                    setState(() {});
-                  }),
-                ), flex: 3)
-              ],
-            ), //Tag Row
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Flexible(
-                    child: Container(
-                        child: const Text(ActionPageLines.rateField),
-                        margin: const EdgeInsets.symmetric(horizontal: 20.0)
-                    ),
-                    flex: 1
+              //num Row
+              const SizedBox(height: 10),
+              TextFormField(
+                decoration: const InputDecoration(
+                    hintText: ActionPageLines.commentField
                 ),
-                Flexible(
-                    child: Focus(
-                      onFocusChange: (hasFocus) {
-                        if (hasFocus) {
-                          state = CustomKeyboard.nothingIsShown;
-                          setState(() {});
-                        }
-                      },
-                      child: TextFormField(
-                        controller: numController,
-                        keyboardType: TextInputType.number,
-                        autovalidateMode: AutovalidateMode.onUserInteraction,
-                        readOnly: disabled,
-                        maxLength: 3,
-                        validator: (value) {
-                          if (value=="") {turnOffButton = true; setState(() { }); return null;}
-                          if (!isNumeric(value) || value == null) {turnOffButton = true; setState(() { }); return "Недопустимое значение";}
-                          if (0 > int.parse(value) || int.parse(value) > 10){
-                            turnOffButton = true;
-                            setState(() { });
-                            return "Число должно быть между 0 и 10";
-                          }
-                          turnOffButton = false;
-                          setState(() { });
-                          return null;
-                        },
-                      ),
-                    ),
-                    flex: 3
-                )
-              ],
-            ),  //num Row
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Flexible(
-                    child: Container(
-                        child: const Text(ActionPageLines.commentField),
-                        margin: const EdgeInsets.symmetric(horizontal: 10.0)
-                    ),
-                    flex: 1
-                ),
-                Flexible(
-                    child: TextFormField(
-                      controller: commentController,
-                      maxLength: 30,
-                    ),
-                    flex: 3
-                )
-              ],
-            ), // comment Row
-            buildAnimatedButton(state: buttonState, update: _update, whileLoading: whileLoading,
-                child: const Text("Сохранить"), disabled: turnOffButton, afterLoading: whenDone),
-            const Spacer(),
-            (state != CustomKeyboard.nothingIsShown) ? SizedBox(
-                height: 300, child: TagKeyboard(onTagPressed: onTagPressed, data: allTags)
-            ) : const SizedBox(),
-          ],
-        ),
+                readOnly: customKeyboardIsActive,
+                controller: commentController,
+                maxLength: 30,
+              ), // comment Row
+              buildAnimatedButton(state: buttonState, update: _update, whileLoading: whileLoading,
+                  child: const Text("Сохранить"), disabled: turnOffButton, afterLoading: whenDone),
+              //const Spacer(),
+              (customKeyboardIsActive) ? SizedBox(
+                  height: 300, child: TagKeyboard(onTagPressed: onTagPressed, data: allTags)
+              ) : const SizedBox(),
+            ],
+          ),
       ),
     );
   }

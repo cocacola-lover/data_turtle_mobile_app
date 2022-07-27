@@ -72,5 +72,18 @@ class ActionPageLines{
 
   static const productAlreadyExists = "Такой продукт уже существует";
   static const somethingWentWrong = "Что-то пошло не так";
+}
 
+class TestUser{
+  static const name = "TestUser";
+  static const hexString = "6241dd3232adfc92ac741178";
+}
+
+class Routes{
+  static const searchPage = "/search_page";
+  static const logIn = '/log_in';
+  static const signIn = '/sign_in';
+  static const actionPage = '/action_page';
+  static const settingPage = '/settings_page';
+  static const loadingPage = '/loading_page';
 }
