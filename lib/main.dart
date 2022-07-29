@@ -5,6 +5,7 @@ import 'package:my_app/pages/action_page.dart';
 import 'package:my_app/pages/search_page.dart';
 import 'package:my_app/pages/setting_page.dart';
 import 'package:my_app/pages/loading_page.dart';
+import 'package:my_app/pages/change_page.dart';
 import 'package:my_app/other/strings.dart' show Routes;
 
 void main() {
@@ -20,7 +21,8 @@ void main() {
       Routes.actionPage: (context) => const ActionPage(),
       Routes.searchPage : (context) => const SearchPage(),
       Routes.settingPage: (context) => const SettingsPage(),
-      Routes.loadingPage: (context) => const LoadingPage()
+      Routes.loadingPage: (context) => const LoadingPage(),
+      Routes.changePage: (context) => const ChangePage()
     }
   ));
 }

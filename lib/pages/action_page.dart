@@ -119,7 +119,7 @@ class _ActionPageState extends State<ActionPage> {
         while (true && !flag) {
           await Future.delayed(const Duration(seconds: 1));
         }
-        if (await mongoHub!.foordProducts.existsName(nameController.text)){
+        if (await mongoHub!.foodProducts.existsName(nameController.text)){
             showActionSnackBar(context, ActionPageLines.productAlreadyExists, 3);
             flag = false;
         }
@@ -130,7 +130,7 @@ class _ActionPageState extends State<ActionPage> {
           product.addRate(ObjectId.fromHexString("6241dd1232adfc92ac741177"),
               comment: commentController.text != "" ? commentController.text : null,
               rate: numController.text != "" ? int.parse(numController.text) : null);
-          done = await mongoHub!.foordProducts.addJson(product.returnJson());
+          done = await mongoHub!.foodProducts.addJson(product.returnJson());
           flag = false;
           if (done) break;
           if (!done) showActionSnackBar(context, ActionPageLines.somethingWentWrong, 3);
@@ -166,79 +166,84 @@ class _ActionPageState extends State<ActionPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
             title: const Text(ActionPageLines.createNewPageName),
           leading: IconButton(
             icon : const Icon(Icons.keyboard_return_outlined),
-            onPressed: () => Navigator.pushReplacementNamed(context, "/search_page"),
+            onPressed: () => Navigator.pop(context) //Navigator.pushReplacementNamed(context, "/search_page"),
           ),
         ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 10.0),
-        child: Column(
-          children: <Widget>[
-            MyTextFormField(
-                hintText: ActionPageLines.nameField,
-                fieldController: nameController,
-                disabled: disabled || customKeyboardIsActive,
-                maxLength: 100,
-                searchButton: IconButton(
-                  icon : const Icon(Icons.keyboard),
-                  onPressed: (){
-                    if (!customKeyboardIsActive) FocusScope.of(context).unfocus();
-                    customKeyboardIsActive = !customKeyboardIsActive;
-                    setState((){});
-                    },
+      body: Column(
+            children: <Widget>[
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 7.0),
+                child: Column(
+                  children: [
+                MyTextFormField(
+                    hintText: ActionPageLines.nameField,
+                    fieldController: nameController,
+                    disabled: disabled || customKeyboardIsActive,
+                    maxLength: 100,
+                    searchButton: IconButton(
+                      icon : const Icon(Icons.keyboard),
+                      onPressed: (){
+                        if (!customKeyboardIsActive) FocusScope.of(context).unfocus();
+                        customKeyboardIsActive = !customKeyboardIsActive;
+                        setState((){});
+                        },
+                    ),
+                  ), //Name Row
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    height: 30,
+                    child: TagBar(data: tagData, onDeleted: (TagData tag) {
+                      tag.isSelected = false;
+                      tagData.remove(tag);
+                      setState(() {});
+                    }),), //Tag Row
+                  const SizedBox(height: 10),
+                  TextFormField(
+                      decoration: const InputDecoration(
+                        hintText: ActionPageLines.rateField
+                      ),
+                      controller: numController,
+                      keyboardType: TextInputType.number,
+                      autovalidateMode: AutovalidateMode.onUserInteraction,
+                      readOnly: disabled || customKeyboardIsActive,
+                      maxLength: 3,
+                      validator: (value) {
+                        if (value=="") {turnOffButton = true; return null;}
+                        if (!isNumeric(value) || value == null) {turnOffButton = true; return "Недопустимое значение";}
+                        if (0 > int.parse(value) || int.parse(value) > 10){
+                          turnOffButton = true;
+                          return "Число должно быть между 0 и 10";
+                        }
+                        turnOffButton = false;
+                        return null;
+                        },
+                    ),
+                  //num Row
+                  const SizedBox(height: 10),
+                  TextFormField(
+                    decoration: const InputDecoration(
+                        hintText: ActionPageLines.commentField
+                    ),
+                    readOnly: customKeyboardIsActive,
+                    controller: commentController,
+                    maxLength: 30,
+                  ), // comment Row
+                  ],
                 ),
-              ), //Name Row
-              const SizedBox(height: 10),
-              SizedBox(
-                height: 30,
-                child: TagBar(data: tagData, onDeleted: (TagData tag) {
-                  tag.isSelected = false;
-                  tagData.remove(tag);
-                  setState(() {});
-                }),), //Tag Row
-              const SizedBox(height: 10),
-              TextFormField(
-                  decoration: const InputDecoration(
-                    hintText: ActionPageLines.rateField
-                  ),
-                  controller: numController,
-                  keyboardType: TextInputType.number,
-                  autovalidateMode: AutovalidateMode.onUserInteraction,
-                  readOnly: disabled || customKeyboardIsActive,
-                  maxLength: 3,
-                  validator: (value) {
-                    if (value=="") {turnOffButton = true; return null;}
-                    if (!isNumeric(value) || value == null) {turnOffButton = true; return "Недопустимое значение";}
-                    if (0 > int.parse(value) || int.parse(value) > 10){
-                      turnOffButton = true;
-                      return "Число должно быть между 0 и 10";
-                    }
-                    turnOffButton = false;
-                    return null;
-                    },
-                ),
-              //num Row
-              const SizedBox(height: 10),
-              TextFormField(
-                decoration: const InputDecoration(
-                    hintText: ActionPageLines.commentField
-                ),
-                readOnly: customKeyboardIsActive,
-                controller: commentController,
-                maxLength: 30,
-              ), // comment Row
-              buildAnimatedButton(state: buttonState, update: _update, whileLoading: whileLoading,
-                  child: const Text("Сохранить"), disabled: turnOffButton, afterLoading: whenDone),
-              //const Spacer(),
-              (customKeyboardIsActive) ? SizedBox(
-                  height: 300, child: TagKeyboard(onTagPressed: onTagPressed, data: allTags)
-              ) : const SizedBox(),
-            ],
-          ),
-      ),
-    );
+              ),
+                buildAnimatedButton(state: buttonState, update: _update, whileLoading: whileLoading,
+                    child: const Text("Сохранить"), disabled: turnOffButton, afterLoading: whenDone),
+                const Spacer(),
+                (customKeyboardIsActive) ? SizedBox(
+                    height: 300, child: TagKeyboard(onTagPressed: onTagPressed, data: allTags)
+                ) : const SizedBox(),
+              ],
+            ),
+        );
   }
 }

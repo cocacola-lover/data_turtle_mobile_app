@@ -5,11 +5,12 @@ import 'dart:math' show Random;
 
 class ItemPanel extends StatelessWidget {
   const ItemPanel({Key? key,
-    required this.data, required this.userName, this.onPressed}) : super(key: key);
+    required this.data, required this.userName, this.onPressed, this.onTap}) : super(key: key);
 
   final ItemData data;
   final ValueGetter<ItemData>? onPressed;
   final String userName;
+  final void Function(ItemData)? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -30,7 +31,7 @@ class ItemPanel extends StatelessWidget {
         List<int?> reducedList = data.rates.map((value) => value.rate).toList();
         reducedList.removeWhere((element) => element == null || element == -1);
         if (reducedList.isNotEmpty) {
-          score = (reducedList as List<int>).reduce((a, b) => a + b) /
+          score = (List<int>.from(reducedList)).reduce((a, b) => a + b) /
               reducedList.length;
           rate = ItemPanelStrings.averageRating + score.toString();
         }
@@ -44,7 +45,7 @@ class ItemPanel extends StatelessWidget {
     }
 
     return ListTile(
-      onTap: () {},
+      onTap: onTap != null ? () => onTap!.call(data) : () {},
       title: Container(child: Text(data.name), alignment: Alignment.centerLeft),
       subtitle: Column(
         children: [

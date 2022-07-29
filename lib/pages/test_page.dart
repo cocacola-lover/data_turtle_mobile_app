@@ -173,7 +173,7 @@ class _TestPageState extends State<TestPage> {
         queueIsRunning = true;
         setState((){});
         results = parseItems(
-            await mongoHub!.foordProducts.findFiltered(
+            await mongoHub!.foodProducts.findFiltered(
                 stringFilter: fieldController.text,
                 tags: TagData.getAllId(tagData)
             ),

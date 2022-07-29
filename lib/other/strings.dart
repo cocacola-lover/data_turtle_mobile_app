@@ -86,4 +86,5 @@ class Routes{
   static const actionPage = '/action_page';
   static const settingPage = '/settings_page';
   static const loadingPage = '/loading_page';
+  static const changePage = '/change_page';
 }

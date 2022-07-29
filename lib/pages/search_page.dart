@@ -18,7 +18,8 @@ import 'package:mongo_dart/mongo_dart.dart' show ConnectionException, ObjectId;
 import 'package:my_app/parsers/tag_parser.dart';
 import 'package:my_app/parsers/item_parser.dart';
 //other
-import 'package:my_app/other/strings.dart' show ConnectionString, ConnectionProblems, AppLines;
+import 'package:my_app/other/strings.dart' show ConnectionString, ConnectionProblems,
+AppLines, Routes;
 import 'package:my_app/other/enums.dart' show CustomKeyboard;
 import 'package:my_app/other/app_shared_preferences.dart' show AppSharedPreferences;
 import 'dart:async';
@@ -210,7 +211,7 @@ class _SearchPageState extends State<SearchPage> {
         if (fieldController.text.isEmpty && tagData.isEmpty) {results = []; setState((){}); continue;}
         setState(() => queueIsRunning = true);
         results = parseItems(
-            await mongoHub!.foordProducts.findFiltered(
+            await mongoHub!.foodProducts.findFiltered(
                 stringFilter: fieldController.text,
                 tags: TagData.getAllId(tagData)
             ),
@@ -258,7 +259,9 @@ class _SearchPageState extends State<SearchPage> {
               Expanded(
                 child: queueIsRunning ? const LoadingPage() : ListView(
                   shrinkWrap: true,
-                  children: results.map((result) => ItemPanel(data: result, userName: userName)).toList(),
+                  children: results.map((result) => ItemPanel(data: result, userName: userName,
+                    onTap: (ItemData value) => Navigator.pushNamed(context, Routes.changePage, arguments: ItemData.from(value)),
+                  )).toList(),
                 ),
               ),
               SizedBox(
