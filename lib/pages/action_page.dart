@@ -61,6 +61,10 @@ class _ActionPageState extends State<ActionPage> {
   Future getSharedPreferences() async {
     await sharedPreferences.init();
     userId = sharedPreferences.getUserObjectId() ?? ObjectId.fromHexString(TestUser.hexString);
+    if (mongoHub == null) {allTags = ModalRoute.of(context)!.settings.arguments as Map<String, List<TagData>>;}
+    else {
+      if (!mongoHub!.isConnected()) {allTags = ModalRoute.of(context)!.settings.arguments as Map<String, List<TagData>>;}
+    }
   }
 
 
@@ -115,8 +119,8 @@ class _ActionPageState extends State<ActionPage> {
       await openDatabase();
       allTags = parseAllTags(await mongoHub!.tags.findAll(), await mongoHub!.tags.sortGroups());
       setState((){});
-      while (true){
-        while (true && !flag) {
+      while (mounted){
+        while (mounted && !flag) {
           await Future.delayed(const Duration(seconds: 1));
         }
         if (await mongoHub!.foodProducts.existsName(nameController.text)){
@@ -213,7 +217,7 @@ class _ActionPageState extends State<ActionPage> {
                       readOnly: disabled || customKeyboardIsActive,
                       maxLength: 3,
                       validator: (value) {
-                        if (value=="") {turnOffButton = true; return null;}
+                        if (value=="") {turnOffButton = false; return null;}
                         if (!isNumeric(value) || value == null) {turnOffButton = true; return "Недопустимое значение";}
                         if (0 > int.parse(value) || int.parse(value) > 10){
                           turnOffButton = true;

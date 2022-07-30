@@ -12,7 +12,7 @@ List<ItemData> parseItems(List<Map<String, dynamic>> data, List<String> colors){
         rates: (item[FoodProductMapFields.foodProductRateField] as List<dynamic>)
             .map((value) => Rate(
           userName : (value as Map<String, dynamic>)[FoodProductMapFields.rateUserField] as String,
-          rate : value[FoodProductMapFields.rateRateField] as int,
+          rate : value[FoodProductMapFields.rateRateField] as int?,
           comment: value[FoodProductMapFields.rateCommentField] as String?
         )).toList(),
         tags: (item[FoodProductMapFields.foodProductTagsField] as List<dynamic>)

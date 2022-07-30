@@ -260,7 +260,7 @@ class _SearchPageState extends State<SearchPage> {
                 child: queueIsRunning ? const LoadingPage() : ListView(
                   shrinkWrap: true,
                   children: results.map((result) => ItemPanel(data: result, userName: userName,
-                    onTap: (ItemData value) => Navigator.pushNamed(context, Routes.changePage, arguments: ItemData.from(value)),
+                    onTap: (ItemData value) => Navigator.pushNamed(context, Routes.changePage, arguments: MapEntry<ItemData,Map<String, List<TagData>>>(ItemData.from(value), allTags)),
                   )).toList(),
                 ),
               ),
@@ -295,7 +295,7 @@ class _SearchPageState extends State<SearchPage> {
                 ),
                 searchButton: IconButton(
                   icon: const Icon(Icons.add),
-                  onPressed: () => Navigator.pushNamed(context, "/action_page"),
+                  onPressed: () => Navigator.pushNamed(context, "/action_page", arguments: allTags),
                 ),
               ),
               (state == CustomKeyboard.standardKeyboardIsShown && fieldController.text.isNotEmpty) ?
